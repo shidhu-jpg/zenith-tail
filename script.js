@@ -30,10 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function renderGrid() {
     const grid = document.getElementById('main-grid');
     if(!grid) return;
-    // RENDERING AS LONG SYMMETRICAL RECTANGULAR BOXES
     grid.innerHTML = products.map(p => `
         <div class="col-11 col-md-4">
-            <div class="product-card shadow-sm" onclick="showPage('detail', ${p.id})">
+            <div class="product-card shadow-sm" onclick="showPage('detail-page', ${p.id})">
                 <div class="product-img-box">
                     <img src="images/${p.prefix}1.jpeg">
                 </div>
@@ -49,20 +48,24 @@ function renderGrid() {
         </div>`).join('');
 }
 
+// SINGLE SOURCE OF TRUTH FOR PAGE SWITCHING
 function showPage(pageId, pid = null) {
-    const pages = ['home-page', 'detail-page', 'checkout-page', 'thankyou-page'];
-    pages.forEach(p => { 
-        const el = document.getElementById(p);
-        if(el) el.style.display = 'none';
+    const pages = ['home-page', 'login-page', 'detail-page', 'checkout-page', 'thankyou-page'];
+    
+    pages.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
     });
 
-    const target = document.getElementById(`${pageId}-page`);
-    if(target) target.style.display = 'block';
+    const target = document.getElementById(pageId);
+    if (target) {
+        target.style.display = 'block';
+    }
 
-    if (pageId === 'detail' && pid) {
+    if (pageId === 'detail-page' && pid) {
         renderProductDetails(pid);
     }
-    window.scrollTo(0,0);
+    window.scrollTo(0, 0);
 }
 
 function renderProductDetails(pid) {
@@ -141,7 +144,7 @@ function changeCartQty(idx, val) {
 function goToCheckout() {
     if (cart.length === 0) return alert("Bag is empty!");
     bootstrap.Offcanvas.getInstance(document.getElementById('cartMenu')).hide();
-    showPage('checkout');
+    showPage('checkout-page');
 }
 
 function handleFinalOrder(event) {
@@ -156,8 +159,69 @@ function handleFinalOrder(event) {
 
     const whatsappURL = `https://api.whatsapp.com/send?phone=919341784664&text=${message}`;
     
-    showPage('thankyou');
+    showPage('thankyou-page');
     window.open(whatsappURL, '_blank');
     cart = [];
     updateCartDisplay();
 }
+
+// ---------------- FIREBASE AUTH SYSTEM ----------------
+
+function signup(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if(!email || !password){
+        alert("Enter email and password");
+        return;
+    }
+
+    auth.createUserWithEmailAndPassword(email, password)
+    .then(() => alert("Account created successfully"))
+    .catch(err => alert(err.message));
+}
+
+function login(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if(!email || !password){
+        alert("Enter email and password");
+        return;
+    }
+
+    auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+        alert("Login successful");
+        showPage('home-page');
+    })
+    .catch(err => alert(err.message));
+}
+
+function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    
+    auth.signInWithPopup(provider)
+    .then((result) => {
+        console.log("Logged in:", result.user.displayName);
+        alert("Welcome to ZenithTail, " + result.user.displayName + "!");
+        showPage('home-page'); 
+    })
+    .catch((error) => {
+        console.error("Login Error:", error.message);
+        if (error.code === 'auth/operation-not-allowed') {
+            alert("Please enable Google Sign-In in Firebase Console!");
+        } else {
+            alert("Login failed: " + error.message);
+        }
+    });
+}
+
+// Track login state
+auth.onAuthStateChanged(user => {
+    if(user){
+        console.log("User logged in:", user.uid);
+    } else {
+        console.log("User logged out");
+    }
+});
