@@ -35,6 +35,99 @@ const products = [
     { id: 3, prefix: 'e', title: "ZenithControl Safety Harness", price: 599, old: 1250, longDesc: "No-pull design with military-grade nylon." }
 ];
 
+
+ 
+
+// --- FIX 1: ADDED THE MISSING RENDER FUNCTION ---
+function renderProductDetails(pid) {
+    const product = products.find(p => p.id === pid);
+    const container = document.getElementById('detail-page'); // Or your detail container ID
+    const content = document.getElementById('detail-content'); // Ensure this ID exists in HTML
+    
+    if (!product || !content) return;
+
+    content.innerHTML = `
+        <div class="row g-4">
+            <div class="col-md-6">
+                <img src="images/${product.prefix}1.jpeg" class="img-fluid rounded-4 shadow-sm">
+            </div>
+            <div class="col-md-6">
+                <h2 class="fw-bold">${product.title}</h2>
+                <div class="mb-3">
+                    <span class="fs-3 fw-bold text-primary">₹${product.price}</span>
+                    <span class="text-decoration-line-through text-muted ms-2">₹${product.old}</span>
+                </div>
+                <p class="text-muted">${product.longDesc}</p>
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="border rounded-pill px-3 py-1">
+                        <span id="detail-qty">1</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-lg w-100 rounded-pill shadow" onclick="addToCart(${product.id})">
+                    Add to Bag
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// ... [Keep Auth and Signup functions] ...
+
+window.showPage = (pageId, pid = null) => {
+    const pages = ['home-page', 'login-page', 'detail-page', 'checkout-page', 'thankyou-page', 'account-page', 'admin-page'];
+    pages.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    const target = document.getElementById(pageId);
+    if (target) target.style.display = 'block';
+    
+    // This now works because the function exists
+    if (pageId === 'detail-page' && pid) renderProductDetails(pid);
+    if (pageId === 'account-page') showAccountDashboard();
+    if (pageId === 'admin-page') loadAdminStats();
+    
+    window.scrollTo(0, 0);
+};
+
+// --- FIX 2: REPAIRED ORDER STORAGE LOGIC ---
+window.handleFinalOrder = async (event) => {
+    event.preventDefault();
+    const name = document.getElementById('custName').value;
+    const total = document.getElementById('cart-total').innerText;
+    
+    try {
+        // Correctly adding a document to the 'orders' collection
+        const orderRef = doc(collection(db, "orders")); 
+        await setDoc(orderRef, {
+            userId: currentUser ? currentUser.uid : "guest",
+            customerName: name,
+            items: cart,
+            total: total,
+            date: new Date(),
+            status: "Processing"
+        });
+
+        const itemDetails = cart.map(i => `• ${i.title} (x${i.qty})`).join('%0A');
+        const message = `*NEW ORDER - ZENITHTAIL* 🐾%0A*Name:* ${name}%0A*Items:*%0A${itemDetails}%0A*Total:* ${total}`;
+        window.open(`https://api.whatsapp.com/send?phone=919341784664&text=${message}`, '_blank');
+        
+        window.showPage('thankyou-page');
+        cart = [];
+        updateCartDisplay();
+    } catch (e) {
+        console.error("Order Error:", e);
+        alert("Could not save order. Please check your connection.");
+    }
+};
+
+// ... [Keep the rest of your Chart and Dashboard logic] ...
+
+
+
+
+
+
 // 4. CORE AUTH & DATA HANDSHAKE
 onAuthStateChanged(auth, async (user) => {
     const loginBtn = document.getElementById('login-btn');
@@ -336,3 +429,50 @@ function renderAdminChart(data) {
         }
     });
 }
+
+
+
+  // --- ADMIN ACCESS LOGIC ---
+window.accessAdmin = () => {
+    console.log("Admin trigger clicked"); // This helps you check if it's working
+    
+    const code = prompt("Enter Secret Admin Access Code:");
+
+    if (code === "2580") {
+        // We use window.showPage to ensure it calls the global version
+        if (typeof window.showPage === "function") {
+            window.showPage('admin-page');
+            
+            // This loads the Firebase data for the charts/stats
+            if (typeof loadAdminStats === "function") {
+                loadAdminStats();
+            }
+        } else {
+            console.error("showPage function not found!");
+        }
+    } else if (code !== null) {
+        alert("Incorrect Code. Access Denied.");
+    }
+};
+
+// Also ensure showPage is global
+window.showPage = (pageId, pid = null) => {
+    const pages = ['home-page', 'login-page', 'detail-page', 'checkout-page', 'thankyou-page', 'account-page', 'admin-page'];
+    
+    pages.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    const target = document.getElementById(pageId);
+    if (target) target.style.display = 'block';
+    
+    // Logic for product details
+    if (pageId === 'detail-page' && pid) {
+        if (typeof renderProductDetails === "function") {
+            renderProductDetails(pid);
+        }
+    }
+    
+    window.scrollTo(0, 0);
+};
