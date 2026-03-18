@@ -51,19 +51,24 @@
     </div>
  
     <nav class="navbar bg-white shadow-sm sticky-top px-3">
-    <div class="container-fluid d-flex align-items-center">
-        <div style="width: 45px;"></div> 
-
-        <div class="flex-grow-1 text-center">
-            <span class="brand fs-2 text-dark" style="cursor:pointer" onclick="showPage('home-page')">🐾 ZenithTail</span>
-        </div>
-        
-        <button class="btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center" 
-                onclick="showPage('login-page')" 
-                style="width: 45px; height: 45px; border: 1px solid #eee; flex-shrink: 0;">
-            <i class="bi bi-person-fill fs-5"></i>
+   <div class="container d-flex justify-content-between align-items-center">
+    <span class="brand fs-2 text-dark" style="cursor:pointer" onclick="showPage('home-page')">🐾 ZenithTail</span>
+    
+    <div id="auth-section">
+        <button id="login-btn" class="btn btn-outline-dark btn-sm rounded-pill" onclick="showPage('login-page')">
+            <i class="bi bi-person-circle"></i> Login
         </button>
+
+        <div id="user-profile" style="display:none;" class="dropdown">
+            <img id="user-pic" src="" class="rounded-circle border" width="35" height="35" style="cursor:pointer" data-bs-toggle="dropdown">
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                <li><a class="dropdown-item small fw-bold" href="#" onclick="showPage('account-page')">My Dashboard</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item small text-danger" href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
     </div>
+</div>
 </nav>
 
     <main>
@@ -195,7 +200,98 @@
             <p class="lead text-muted">Click 'Send' on WhatsApp to finalize your delivery.</p>
             <button class="btn btn-primary mt-3 px-5 py-2" onclick="showPage('home')">Return to Home</button>
         </div>
+
+<div id="account-page" style="display:none;" class="container my-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4 text-center rounded-4 border">
+                <img id="dash-user-pic" src="" class="rounded-circle mx-auto mb-3 border" width="80" height="80">
+                <h4 id="dash-user-name" class="fw-bold mb-1">User Name</h4>
+                <p id="dash-user-email" class="text-muted small">user@email.com</p>
+                <button class="btn btn-dark w-100 rounded-pill mt-2" onclick="showPage('home-page')">Continue Shopping</button>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm p-4 rounded-4 mb-4 border">
+                <h5 class="fw-bold mb-3"><i class="bi bi-bag-heart me-2"></i>My Saved Bag</h5>
+                <div id="dash-cart-summary">
+                    <p class="text-muted small">Your bag is empty.</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 rounded-4 border">
+                <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Order History</h5>
+                <div id="orders-container">
+                    <p class="text-muted small text-center py-3">Loading your orders...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="admin-page" style="display:none;" class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">🚀 Admin Insights</h2>
+        <button class="btn btn-sm btn-outline-danger" onclick="showPage('home-page')">Exit Admin</button>
+    </div>
+
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-6 col-md-3">
+            <div class="p-3 shadow-sm rounded-4 border bg-white">
+                <small class="text-muted">Total Orders</small>
+                <h3 id="admin-total-orders" class="fw-bold mb-0">0</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-3 shadow-sm rounded-4 border bg-white">
+                <small class="text-muted">Total Revenue</small>
+                <h3 id="admin-revenue" class="fw-bold mb-0 text-primary">₹0</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4 rounded-4 mb-4 border">
+        <canvas id="adminChart" style="width:100%; max-height:300px;"></canvas>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4 rounded-4 border">
+        <h6 class="fw-bold mb-3">Live Order Stream</h6>
+        <div id="admin-order-list" class="small"></div>
+    </div>
+</div>
+
     </main>
+
+
+    <div id="account-page" style="display:none;" class="container my-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-4 text-center rounded-4">
+                <img id="dash-user-pic" src="" class="rounded-circle mx-auto mb-3" width="80">
+                <h4 id="dash-user-name" class="fw-bold mb-1">...</h4>
+                <p id="dash-user-email" class="text-muted small">...</p>
+                <button class="btn btn-outline-danger btn-sm w-100 mt-3" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm p-4 rounded-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-box-seam me-2"></i>Recent Orders</h5>
+                <div id="orders-container" class="list-group list-group-flush">
+                    <p class="text-muted small">Loading orders...</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-4 rounded-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-cart3 me-2"></i>Items in your Bag</h5>
+                <div id="dash-cart-items" class="small">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <footer>
         <div class="container">
@@ -221,6 +317,14 @@
             <hr class="my-4">
             <p class="text-center small text-muted mb-0">© 2026 ZenithTail. Built for Pet Lovers.</p>
         </div>
+
+<div class="py-3 text-center bg-light">
+    <input type="password" id="admin-code" placeholder="Admin Access" 
+           style="border:none; background:transparent; width:80px; font-size:10px; text-align:center;" 
+           oninput="checkAdminCode(this.value)">
+</div>
+
+
     </footer>
 
     <div class="offcanvas offcanvas-end" tabindex="-1" id="cartMenu">
