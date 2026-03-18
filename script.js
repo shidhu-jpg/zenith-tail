@@ -9,13 +9,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // 2. CONFIGURATION (Ensure these match your Firebase Console)
+ // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAPIBH3ZyKjsth-Nk1qbHS6UNR5CVxV79k",
+  authDomain: "zenithtail.firebaseapp.com",
+  projectId: "zenithtail",
+  storageBucket: "zenithtail.firebasestorage.app",
+  messagingSenderId: "293020299978",
+  appId: "1:293020299978:web:a8a32c67c9839452a0ba33",
+  measurementId: "G-1NJ1CS271N"
 };
 
 // 3. INITIALIZATION
