@@ -1,5 +1,10 @@
+/* ============================================================
+   ZENITHTAIL — style.css
+   ============================================================ */
+
 :root {
     --primary: #DEAD6F;
+    --primary-dark: #c9973e;
     --accent: #6995B1;
     --dark: #1a1a1a;
 }
@@ -8,27 +13,52 @@ body {
     font-family: 'Montserrat', sans-serif;
     background-color: #fffaf5;
     margin: 0;
+    overflow-x: hidden;
 }
 
 h1, h2, h3, .brand {
     font-family: 'Chilanka', cursive;
 }
 
-/* Header/Promo Styling */
+/* ── Promo Bar ─────────────────────────────────────────── */
 .promo-bar {
-    background: #d63384;
+    background: linear-gradient(90deg, #d63384, #c0156e);
     color: white;
     text-align: center;
-    padding: 8px;
+    padding: 9px 16px;
     font-weight: bold;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.2px;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
-/* Home Banners */
+@media (max-width: 768px) {
+    .promo-bar {
+        animation: marquee 18s linear infinite;
+        display: inline-block;
+        padding: 9px 40px;
+    }
+
+    @keyframes marquee {
+        from { transform: translateX(100vw); }
+        to   { transform: translateX(-100%); }
+    }
+}
+
+/* ── Navbar ────────────────────────────────────────────── */
+.brand {
+    font-weight: 800;
+    letter-spacing: -1px;
+    cursor: pointer;
+}
+
+/* ── Hero Swiper ───────────────────────────────────────── */
 .hero-swiper {
     width: 100%;
-    height: 30vh;
-    border-radius: 0 0 20px 20px;
+    height: 55vh;
+    min-height: 260px;
+    max-height: 520px;
 }
 
 .hero-swiper img {
@@ -37,19 +67,87 @@ h1, h2, h3, .brand {
     object-fit: cover;
 }
 
-/* Product Cards */
+.hero-swiper .swiper-slide {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.hero-overlay h2 {
+    font-family: 'Chilanka', cursive;
+    text-shadow: 2px 2px 12px rgba(0, 0, 0, 0.5);
+    margin-bottom: 10px;
+}
+
+.hero-overlay p {
+    font-weight: 400;
+    text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.5);
+    max-width: 80%;
+    margin-bottom: 20px;
+}
+
+.hero-swiper .swiper-button-prev,
+.hero-swiper .swiper-button-next {
+    color: white;
+    opacity: 0.7;
+}
+
+/* ── Category Filter Pills ─────────────────────────────── */
+.filter-pills {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    border: 1.5px solid #ddd;
+    background: white;
+    border-radius: 50px;
+    padding: 6px 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #444;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.filter-pill.active,
+.filter-pill:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* ── Product Cards ─────────────────────────────────────── */
 .product-img-box {
     width: 100%;
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    background: #eee;
+    background: #f0ece6;
     border-radius: 12px 12px 0 0;
+    position: relative;
 }
 
 .product-img-box img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.4s ease;
 }
 
 .product-card {
@@ -58,65 +156,211 @@ h1, h2, h3, .brand {
     border: 1px solid #eee;
     cursor: pointer;
     height: 100%;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
 }
 
 .product-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.10) !important;
 }
 
-.hidden {
-    display: none !important;
+.product-card:hover .product-img-box img {
+    transform: scale(1.04);
 }
 
-/* Detail Page Gallery */
+/* Product badge (Best Seller / New / Premium) */
+.product-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 50px;
+    z-index: 1;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ── Buttons ───────────────────────────────────────────── */
+.btn-primary {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: white !important;
+    font-weight: 700;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+}
+
+/* ── Detail Page ───────────────────────────────────────── */
 .detail-swiper {
     width: 100%;
-    aspect-ratio: 1/1;
-    border-radius: 15px;
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f0ece6;
 }
 
-.btn-primary {
-    background: var(--primary);
-    border: none;
-    border-radius: 50px;
-    font-weight: 700;
-    padding: 12px;
-}
-
-/* Quantity Controls */
-.qty-btn {
-    width: 35px;
-    height: 35px;
+.detail-swiper .swiper-button-prev,
+.detail-swiper .swiper-button-next {
+    color: var(--primary);
+    background: rgba(255, 255, 255, 0.85);
     border-radius: 50%;
-    border: 1px solid #ddd;
-    background: white;
-    font-weight: bold;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.qty-btn:active {
-    background-color: #eee;
+.detail-swiper .swiper-button-prev::after,
+.detail-swiper .swiper-button-next::after {
+    font-size: 14px;
+    font-weight: 900;
 }
 
-/* Floating Elements */
-#cart-trigger {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
+.thumb-img {
+    opacity: 0.7;
+    transition: opacity 0.2s, transform 0.2s;
+    border-color: #ddd !important;
+}
+
+.thumb-img:hover {
+    opacity: 1;
+    transform: scale(1.08);
+}
+
+/* Feature list */
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.feature-list li {
+    padding: 7px 0;
+    border-bottom: 1px solid #f0ece6;
+    font-size: 0.88rem;
+    color: #444;
+}
+
+.feature-list li::before {
+    content: "✓  ";
+    color: var(--primary);
+    font-weight: 800;
+}
+
+/* Qty controls */
+.qty-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.qty-control span {
+    font-weight: 700;
+    font-size: 1.05rem;
+    min-width: 22px;
+    text-align: center;
+}
+
+.qty-btn {
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    z-index: 1000;
+    border: 1.5px solid #ddd;
+    background: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s;
+    padding: 0;
 }
 
+.qty-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.qty-btn:active {
+    transform: scale(0.93);
+}
+
+/* ── Cart Offcanvas ────────────────────────────────────── */
 #cartMenu {
     width: 100%;
     max-width: 400px;
 }
 
+/* Floating cart button */
+#cart-trigger {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Checkout Page ─────────────────────────────────────── */
+.checkout-summary {
+    background: #fffaf5;
+    border: 1px solid #f0e6d0;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+/* ── Stats / Dashboard Cards ───────────────────────────── */
+.stats-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #eee;
+    padding: 20px;
+}
+
+/* Order history badge */
+.order-badge {
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* ── Spinner Overlay ───────────────────────────────────── */
+.spinner-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.82);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-color: var(--primary);
+    border-right-color: transparent;
+}
+
+/* ── Footer ────────────────────────────────────────────── */
 footer {
     background: var(--dark);
     color: #ccc;
@@ -128,48 +372,342 @@ footer h5 {
     color: var(--primary);
 }
 
-/* Hero Slide Container */
-.hero-swiper .swiper-slide {
-    position: relative; /* Essential for overlay positioning */
-    display: flex;
-    align-items: center; /* Centers text vertically */
-    justify-content: center; /* Centers text horizontally */
+.footer-link {
+    text-decoration: none;
+    color: #888;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+    display: block;
 }
 
-/* The Overlay Box */
-.hero-overlay {
-    position: absolute;
-    z-index: 10;
-    text-align: center;
-    color: white;
-    padding: 20px;
-    /* This adds a dark tint so white text is always readable */
-    background: rgba(0, 0, 0, 0.3); 
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.footer-link:hover {
+    color: var(--primary);
 }
 
-.hero-overlay h2 {
-    font-family: 'Chilanka', cursive;
-    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-    margin-bottom: 10px;
+/* ── "Why Us" strip ────────────────────────────────────── */
+.why-strip {
+    background: white;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
 }
 
-.hero-overlay p {
-    font-weight: 400;
-    text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
-    max-width: 80%;
-}
-
-/* Mobile Adjustments */
-@media (max-width: 768px) {
-    .hero-overlay h2 { font-size: 1.8rem; }
-    .hero-overlay p { font-size: 0.9rem; }
-}
+/* ── Utility ───────────────────────────────────────────── */
 .hidden {
     display: none !important;
+}
+
+/* ── Trust Strip ───────────────────────────────────────── */
+.trust-strip {
+    background: white;
+    border-top: 1px solid #f0e6d0;
+    border-bottom: 1px solid #f0e6d0;
+}
+
+.trust-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.trust-icon {
+    font-size: 1.6rem;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.trust-text {
+    font-size: 0.8rem;
+    line-height: 1.3;
+}
+
+.trust-sub {
+    color: #888;
+    font-size: 0.72rem;
+}
+
+/* ── Section Labels ────────────────────────────────────── */
+.section-eyebrow {
+    display: inline-block;
+    background: #fff3dd;
+    color: var(--primary-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 14px;
+    border-radius: 50px;
+}
+
+/* ── Testimonials ──────────────────────────────────────── */
+.testimonials-section {
+    background: linear-gradient(135deg, #fffaf5 0%, #fff8ee 100%);
+    border-top: 1px solid #f0e6d0;
+    border-bottom: 1px solid #f0e6d0;
+}
+
+.review-card {
+    background: white;
+    border: 1px solid #f0e6d0;
+    border-radius: 16px;
+    padding: 24px;
+    height: 100%;
+    box-shadow: 0 2px 16px rgba(222,173,111,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.review-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(222,173,111,0.15);
+}
+
+.review-stars {
+    color: #f4a818;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.review-text {
+    font-size: 0.88rem;
+    color: #444;
+    line-height: 1.65;
+    margin-bottom: 16px;
+    font-style: italic;
+}
+
+.review-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.review-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.verified-badge {
+    font-size: 0.68rem;
+    color: #28a745;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ── WhatsApp CTA ──────────────────────────────────────── */
+.whatsapp-cta-section {
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+}
+
+/* ── Product Cards — Stars & Sold ─────────────────────── */
+.product-stars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.product-stars .bi {
+    font-size: 0.7rem;
+}
+
+.sold-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 50px;
+    backdrop-filter: blur(4px);
+}
+
+/* ── Urgency Badges (Detail Page) ─────────────────────── */
+.urgency-row {
+    background: #fff5f5;
+    border: 1px solid #ffd0d0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+}
+
+.urgency-row .stock-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e53935;
+    margin-right: 6px;
+    animation: pulse-red 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ── COD & Delivery Badges (Detail Page) ──────────────── */
+.delivery-info-box {
+    background: #f8fff8;
+    border: 1px solid #d4edda;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+}
+
+.cod-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 50px;
+    border: 1px solid #c8e6c9;
+}
+
+/* ── Size Selector ────────────────────────────────────── */
+.size-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.size-btn {
+    border: 1.5px solid #ddd;
+    background: white;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #444;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.size-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary-dark);
+}
+
+.size-btn.selected {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* ── Trust Badges Row (Detail Page) ──────────────────── */
+.detail-trust-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.76rem;
+    color: #555;
+}
+
+.detail-trust-row span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.detail-trust-row i {
+    color: var(--primary);
+    font-size: 0.9rem;
+}
+
+/* ── Customer Reviews (Detail Page) ──────────────────── */
+.reviews-section-detail {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #f0e6d0;
+}
+
+.review-rating-summary {
+    background: #fffaf5;
+    border: 1px solid #f0e6d0;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.review-big-number {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--dark);
+    line-height: 1;
+}
+
+.detail-review-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.detail-review-stars {
+    color: #f4a818;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+}
+
+/* ── Mobile Sticky Buy Bar ────────────────────────────── */
+#mobile-buy-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #eee;
+    padding: 10px 16px;
+    z-index: 999;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+
+/* ── Mobile Adjustments ────────────────────────────────── */
+@media (max-width: 768px) {
+    .hero-overlay h2 {
+        font-size: 1.7rem;
+    }
+
+    .hero-overlay p {
+        font-size: 0.88rem;
+    }
+
+    .hero-swiper {
+        height: 42vh;
+    }
+
+    #cart-trigger {
+        bottom: 16px;
+        right: 14px;
+        width: 52px;
+        height: 52px;
+    }
+
+    .stats-card {
+        padding: 15px;
+    }
+
+    .detail-swiper {
+        border-radius: 10px;
+    }
 }
