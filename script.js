@@ -832,7 +832,184 @@ function renderAdminChart(data) {
 }
 
 // ============================================================
-// 15. AUTH STATE LISTENER
+// 15. PET PERSONALITY QUIZ
+// ============================================================
+
+const quizQuestions = [
+    {
+        q: "What type of pet do you have?",
+        emoji: "🐾",
+        options: [
+            { label: "Dog",   emoji: "🐶", val: "dog" },
+            { label: "Cat",   emoji: "🐱", val: "cat" },
+            { label: "Both!", emoji: "🐾", val: "both" }
+        ]
+    },
+    {
+        q: "How old is your furry friend?",
+        emoji: "🎂",
+        options: [
+            { label: "Puppy / Kitten", emoji: "🐣", val: "puppy",  sub: "Under 2 years" },
+            { label: "Young Adult",    emoji: "🦴", val: "young",  sub: "2–5 years" },
+            { label: "Senior",         emoji: "🎓", val: "senior", sub: "5+ years" }
+        ]
+    },
+    {
+        q: "How's their coat?",
+        emoji: "✨",
+        options: [
+            { label: "Short & Smooth", emoji: "💨", val: "short" },
+            { label: "Long & Fluffy",  emoji: "🌊", val: "long" },
+            { label: "Dense & Thick",  emoji: "🌿", val: "thick", sub: "Like Labrador / Husky" }
+        ]
+    },
+    {
+        q: "Does your pet pull on the leash?",
+        emoji: "🦮",
+        options: [
+            { label: "Yes, always!",  emoji: "😤", val: "always" },
+            { label: "Sometimes",     emoji: "😅", val: "sometimes" },
+            { label: "Nope, angel!", emoji: "😇", val: "never" }
+        ]
+    },
+    {
+        q: "What's most important to you?",
+        emoji: "💫",
+        options: [
+            { label: "Better Grooming",  emoji: "🛁", val: "grooming", sub: "Clean coat & less shedding" },
+            { label: "Leash Control",    emoji: "🦮", val: "control",  sub: "No more pulling" },
+            { label: "Both equally!",    emoji: "✨", val: "both" }
+        ]
+    }
+];
+
+let quizAnswers = [];
+let quizStep = 0;
+
+window.openQuiz = () => {
+    quizAnswers = [];
+    quizStep = 0;
+    const modalEl = document.getElementById('petQuizModal');
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    renderQuizStep();
+};
+
+function renderQuizStep() {
+    const q = quizQuestions[quizStep];
+    const progress = (quizStep / quizQuestions.length) * 100;
+
+    document.getElementById('quiz-progress-fill').style.width = progress + '%';
+    document.getElementById('quiz-step-text').textContent = `Question ${quizStep + 1} of ${quizQuestions.length}`;
+
+    document.getElementById('quiz-body').innerHTML = `
+        <span class="quiz-question-emoji">${q.emoji}</span>
+        <h4 class="quiz-question-text">${q.q}</h4>
+        <div class="quiz-options">
+            ${q.options.map(opt => `
+                <button class="quiz-option-btn" onclick="selectQuizAnswer('${opt.val}', this)">
+                    <span class="quiz-opt-emoji">${opt.emoji}</span>
+                    <div>
+                        <span class="quiz-opt-label">${opt.label}</span>
+                        ${opt.sub ? `<span class="quiz-opt-sub">${opt.sub}</span>` : ''}
+                    </div>
+                </button>
+            `).join('')}
+        </div>
+    `;
+}
+
+window.selectQuizAnswer = (val, btn) => {
+    document.querySelectorAll('.quiz-option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    quizAnswers.push(val);
+    quizStep++;
+    setTimeout(() => {
+        if (quizStep >= quizQuestions.length) showQuizResult();
+        else renderQuizStep();
+    }, 380);
+};
+
+function showQuizResult() {
+    // Score grooming vs harness
+    let g = 0, h = 0;
+    const coat = quizAnswers[2];    // 'short' | 'long' | 'thick'
+    const pull = quizAnswers[3];    // 'always' | 'sometimes' | 'never'
+    const priority = quizAnswers[4]; // 'grooming' | 'control' | 'both'
+
+    if (quizAnswers[0] === 'cat') g += 2; else { g += 1; h += 1; }
+    if (coat === 'long' || coat === 'thick') g += 2;
+    if (pull === 'always') h += 3; else if (pull === 'sometimes') h += 1;
+    if (priority === 'grooming') g += 3;
+    else if (priority === 'control') h += 3;
+    else { g += 1; h += 1; }
+
+    let pid, personalMsg;
+    if (h > g) {
+        pid = 3;
+        personalMsg = pull === 'always'
+            ? "Since your dog pulls hard, the front-clip ZenithControl Harness will transform your walks. No more sore arms or sore neck for your pup!"
+            : "The ZenithControl Harness gives you calm, in-control walks. Your dog will love the padded chest comfort too.";
+    } else if (coat === 'thick') {
+        pid = 2;
+        personalMsg = "For a dense, thick coat like your pet's, the Pro-Clean Brush with deep steel pins is the perfect match — reaches the undercoat, then one click ejects all the fur!";
+    } else {
+        pid = 1;
+        personalMsg = coat === 'long'
+            ? "For long, fluffy coats, the Zenith-Mist 3-in-1 Brush is ideal — the conditioning mist detangles while you brush, making grooming 3× faster!"
+            : "The Zenith-Mist 3-in-1 Brush keeps your pet's coat shiny and tangle-free. The ultra-quiet motor means even nervous pets stay calm.";
+    }
+
+    const p = products.find(pr => pr.id === pid);
+    const discount = Math.round((1 - p.price / p.old) * 100);
+
+    document.getElementById('quiz-progress-fill').style.width = '100%';
+    document.getElementById('quiz-step-text').textContent = 'Your Perfect Match! 🎉';
+
+    document.getElementById('quiz-body').innerHTML = `
+        <div class="quiz-result">
+            <span class="quiz-result-tag">✨ Personalised just for your pet</span>
+            <img src="images/${p.prefix}1.jpeg" alt="${p.title}" class="quiz-result-img">
+            <div class="quiz-result-name">${p.title}</div>
+            <div class="quiz-result-price">
+                <span class="text-primary fw-bold fs-5">₹${p.price}</span>
+                <span class="text-muted text-decoration-line-through ms-2">₹${p.old}</span>
+                <span class="badge bg-success ms-2">${discount}% OFF</span>
+            </div>
+            <div class="mb-2">${starHtml(p.rating, '0.95rem')} <span class="small text-muted ms-1">(${p.reviewCount} reviews)</span></div>
+            <p class="quiz-result-msg">${personalMsg}</p>
+            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                <button class="btn btn-primary fw-bold rounded-pill px-4" onclick="quizAddToCart(${pid})">
+                    <i class="bi bi-bag-plus me-1"></i> Add to Bag
+                </button>
+                <button class="btn btn-outline-dark rounded-pill px-4" onclick="quizViewProduct(${pid})">
+                    View Product
+                </button>
+            </div>
+            <div class="text-center mt-3">
+                <button class="btn btn-link text-muted small p-0" onclick="retakeQuiz()">↩ Retake Quiz</button>
+            </div>
+        </div>
+    `;
+}
+
+window.quizAddToCart = (pid) => {
+    addToCart(pid);
+    bootstrap.Modal.getInstance(document.getElementById('petQuizModal')).hide();
+};
+
+window.quizViewProduct = (pid) => {
+    bootstrap.Modal.getInstance(document.getElementById('petQuizModal')).hide();
+    showPage('detail-page', pid);
+};
+
+window.retakeQuiz = () => {
+    quizAnswers = [];
+    quizStep = 0;
+    renderQuizStep();
+};
+
+// ============================================================
+// 16. AUTH STATE LISTENER
 // ============================================================
 
 onAuthStateChanged(auth, async (user) => {
