@@ -95,7 +95,7 @@ const products = [
             'Includes 4-week Pet-Owner Strength Programme card',
             'Designed for leash control, grooming & nail-trim grip'
         ],
-        images: 2,
+        images: 4,
         stock: 20
     },
     {
