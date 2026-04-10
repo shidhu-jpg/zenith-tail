@@ -78,6 +78,44 @@ const products = [
         images: 4,
         sizes: ['S', 'M', 'L'],
         stock: 11
+    },
+    {
+        id: 4, prefix: 'r',
+        title: "ZenithGrip Pro Hand Trainer",
+        price: 249, old: 599,
+        category: 'owner',
+        badge: 'For Owners',
+        rating: 4.6, reviewCount: 184, sold: 521,
+        shortDesc: "Build grip strength for confident walks & grooming.",
+        longDesc: "Most pet owners don't realise that aching wrists and weak grip are what make walks exhausting and grooming sessions a struggle. The ZenithGrip Pro uses progressive-resistance carbon steel springs (15–40 kg adjustable) housed in an anti-slip TPR grip — the same material used in professional physiotherapy equipment. Stronger hands mean firmer leash control on pulls, steadier hold during nail trims, and less fatigue during long brushing sessions. Comes with a printed 4-week Pet-Owner Strength Programme card. Cheaper grippers under ₹100 use brittle coil springs that lose tension within weeks — ZenithGrip Pro is rated for 500,000 repetitions.",
+        features: [
+            'Adjustable resistance 15–40 kg (carbon steel spring)',
+            'Anti-slip TPR ergonomic handles — no hand fatigue',
+            'Rated 500,000 reps — built to outlast budget grippers',
+            'Includes 4-week Pet-Owner Strength Programme card',
+            'Designed for leash control, grooming & nail-trim grip'
+        ],
+        images: 2,
+        stock: 20
+    },
+    {
+        id: 5, prefix: 't',
+        title: "ZenithGrip Combo — Hand + Finger Trainer",
+        price: 349, old: 799,
+        category: 'owner',
+        badge: 'Combo Deal',
+        rating: 4.8, reviewCount: 97, sold: 214,
+        shortDesc: "Full hand & finger strength in one combo pack.",
+        longDesc: "The ultimate strength combo for serious pet owners. The Hand Gripper provides heavy progressive resistance (15–40 kg, carbon steel spring) to build overall palm and wrist strength — critical for controlling strong dogs on a leash. The Finger Gripper individually trains each finger with targeted ring resistance, dramatically improving your grip on grooming tools, leash handles, and nail-trim equipment. Together they deliver a complete hand workout that cheaper single grippers simply can't match. Perfect for pet parents who want faster results and better control without buying two separate products.",
+        features: [
+            'Includes both Hand Gripper & Finger Gripper',
+            'Hand gripper: 15–40 kg adjustable carbon steel spring',
+            'Finger gripper: individual finger resistance rings',
+            'Anti-slip TPR handles on both pieces',
+            'Better value combo — save vs. buying separately'
+        ],
+        images: 2,
+        stock: 15
     }
 ];
 
@@ -97,6 +135,16 @@ const productReviews = {
         { name: "Meera R.", city: "Kolkata", rating: 5, text: "My border collie was a nightmare on walks — always pulling hard. The ZenithControl Harness changed everything. He walks so calmly now with the front clip!", date: "1 day ago", avatar: "M", color: "#DEAD6F" },
         { name: "Saurabh G.", city: "Ahmedabad", rating: 5, text: "Outstanding quality. The reflective strips are great for night walks. My dog seems very comfortable — he doesn't try to wriggle out like his old harness.", date: "5 days ago", avatar: "S", color: "#5b8dee" },
         { name: "Divya L.", city: "Jaipur", rating: 4, text: "Great harness! Size M fits my beagle perfectly. The chest padding is really soft and he doesn't resist wearing it at all. Very happy with this purchase.", date: "2 weeks ago", avatar: "D", color: "#43b08c" },
+    ],
+    4: [
+        { name: "Kavitha R.", city: "Bangalore", rating: 5, text: "My arm used to ache after every walk with my husky. After 3 weeks with the ZenithGrip I barely feel the pull anymore. The resistance card is a nice touch — actually followed it!", date: "4 days ago", avatar: "K", color: "#DEAD6F" },
+        { name: "Suresh M.", city: "Chennai", rating: 5, text: "Bought this for better grip during nail trims — my lab never stays still. Huge difference after two weeks. Quality feels much better than the cheap ones on other sites.", date: "1 week ago", avatar: "S", color: "#5b8dee" },
+        { name: "Pooja A.", city: "Pune", rating: 4, text: "Good solid build, the spring resistance is noticeably stronger than cheaper brands. My wrist pain during grooming has reduced a lot. Worth paying a bit more for the quality.", date: "3 weeks ago", avatar: "P", color: "#43b08c" },
+    ],
+    5: [
+        { name: "Nisha T.", city: "Delhi", rating: 5, text: "Brilliant combo! The finger gripper is something I didn't know I needed — my fingers used to cramp during nail trims. Both pieces are solid quality and the combo price is great.", date: "2 days ago", avatar: "N", color: "#DEAD6F" },
+        { name: "Rohit K.", city: "Hyderabad", rating: 5, text: "Got both pieces and use them daily before morning walks with my rottweiler. My grip strength has noticeably improved in just two weeks. Way better value than buying separately.", date: "5 days ago", avatar: "R", color: "#5b8dee" },
+        { name: "Lakshmi V.", city: "Bangalore", rating: 5, text: "Love this combo! The hand gripper is great for overall strength and the finger gripper really helped with holding the leash steady during pulls. Highly recommend for large dog owners.", date: "2 weeks ago", avatar: "L", color: "#43b08c" },
     ]
 };
 
@@ -201,6 +249,40 @@ window.continueShoppingFromCart = () => {
 // 7. PRODUCT GRID & FILTERING
 // ============================================================
 
+// Most expensive product id gets a discount countdown timer
+const TIMER_PRODUCT_ID = 3;
+
+function getTimerEnd() {
+    let end = parseInt(localStorage.getItem('zenith_timer_end') || '0');
+    if (!end || end < Date.now()) {
+        end = Date.now() + 24 * 60 * 60 * 1000; // 24 hours from now
+        localStorage.setItem('zenith_timer_end', end);
+    }
+    return end;
+}
+
+let timerInterval = null;
+function startDiscountTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    const end = getTimerEnd();
+    function tick() {
+        const el = document.getElementById(`deal-timer-${TIMER_PRODUCT_ID}`);
+        if (!el) { clearInterval(timerInterval); return; }
+        const diff = end - Date.now();
+        if (diff <= 0) {
+            el.textContent = '00:00:00';
+            clearInterval(timerInterval);
+            return;
+        }
+        const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        el.textContent = `${h}:${m}:${s}`;
+    }
+    tick();
+    timerInterval = setInterval(tick, 1000);
+}
+
 function renderGrid() {
     const grid = document.getElementById('main-grid');
     if (!grid) return;
@@ -213,6 +295,11 @@ function renderGrid() {
         ? `<p class="text-center text-muted py-5">No products in this category yet.</p>`
         : filtered.map(p => {
             const discount = Math.round((1 - p.price / p.old) * 100);
+            const timerHtml = p.id === TIMER_PRODUCT_ID ? `
+                <div style="background:#fff3cd;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:0.72rem;font-weight:700;color:#856404;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="bi bi-alarm-fill"></i> Deal ends in:
+                    <span id="deal-timer-${p.id}" style="font-family:monospace;font-size:0.85rem;color:#c0392b;letter-spacing:1px;">--:--:--</span>
+                </div>` : '';
             return `
             <div class="col-11 col-sm-6 col-md-4">
                 <div class="product-card shadow-sm" onclick="showPage('detail-page', ${p.id})">
@@ -234,11 +321,17 @@ function renderGrid() {
                             <small class="text-muted text-decoration-line-through ms-2">₹${p.old}</small>
                             <span class="ms-1 badge bg-success-subtle text-success" style="font-size:0.65rem;">${discount}% OFF</span>
                         </div>
+                        ${timerHtml}
                         <button class="btn btn-primary w-100 rounded-pill small fw-bold">View Details →</button>
                     </div>
                 </div>
             </div>`;
         }).join('');
+
+    // Start timer if the timer product is visible
+    if (filtered.some(p => p.id === TIMER_PRODUCT_ID)) {
+        startDiscountTimer();
+    }
 }
 
 window.filterProducts = (category) => {
