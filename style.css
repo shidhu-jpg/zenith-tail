@@ -928,3 +928,242 @@ footer h5 {
         border-radius: 10px;
     }
 }
+
+/* ============================================================
+   SEARCH BAR
+   ============================================================ */
+.navbar-search {
+    flex: 1;
+    max-width: 360px;
+    margin: 0 24px;
+}
+
+.search-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 14px 8px 34px;
+    border: 1.5px solid #eee;
+    border-radius: 50px;
+    font-size: 0.82rem;
+    outline: none;
+    background: #f8f9fa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.search-input:focus {
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(222,173,111,0.15);
+}
+
+/* ── Sort Dropdown ─────────────────────────────────────────── */
+.sort-select {
+    font-size: 0.8rem;
+    padding: 5px 28px 5px 12px;
+    border-color: #e0e0e0;
+    background-color: #f8f9fa;
+    color: #444;
+    cursor: pointer;
+}
+
+.sort-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(222,173,111,0.15);
+}
+
+/* ── Wishlist Button ────────────────────────────────────────── */
+.wishlist-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #bbb;
+    backdrop-filter: blur(4px);
+    transition: color 0.2s, transform 0.15s, background 0.2s;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.wishlist-btn:hover {
+    color: #e05252;
+    transform: scale(1.1);
+}
+
+.wishlist-btn.active {
+    color: #e05252;
+    background: rgba(255,255,255,0.95);
+}
+
+/* ── Discount Code Section ───────────────────────────────────── */
+.discount-code-section {
+    background: #f8fff8;
+    border: 1px dashed #c8e6c9;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+/* ============================================================
+   ANALYTICS / ADMIN DASHBOARD
+   ============================================================ */
+.analytics-kpi-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    text-align: center;
+    transition: transform 0.15s;
+}
+
+.analytics-kpi-card:hover {
+    transform: translateY(-2px);
+}
+
+.kpi-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 1.3rem;
+}
+
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.75rem;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 3px;
+}
+
+.kpi-sub {
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-top: 2px;
+}
+
+.analytics-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* ── Admin Orders Table ─────────────────────────────────────── */
+.admin-orders-table {
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.admin-orders-table thead tr th {
+    color: #888;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 8px 10px;
+    border-bottom: 2px solid #f0f0f0;
+    white-space: nowrap;
+}
+
+.admin-orders-table tbody tr td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #f8f8f8;
+    vertical-align: middle;
+}
+
+.admin-orders-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-orders-table tbody tr:hover {
+    background: #fafafa;
+}
+
+/* ── Order Status Badges ────────────────────────────────────── */
+.order-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.admin-status-btn {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 50px;
+    border: 1.5px solid #ddd;
+    background: #fff;
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 2px 1px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    color: #555;
+}
+
+.admin-status-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* ── bg-purple-subtle (not in Bootstrap 5.3 by default) ─────── */
+.bg-purple-subtle { background-color: #f3e8ff !important; }
+.text-purple { color: #7c3aed !important; }
+
+/* ── Loyalty Tier Badges ────────────────────────────────────── */
+.loyalty-tier-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.loyalty-gold   { background: #fff8e1; color: #f59e0b; border: 1.5px solid #fde68a; }
+.loyalty-silver { background: #f3f4f6; color: #6b7280; border: 1.5px solid #d1d5db; }
+.loyalty-bronze { background: #fff7ed; color: #b45309; border: 1.5px solid #fcd9a0; }
+
+/* ── Mobile Search Bar ──────────────────────────────────────── */
+#mobile-search-bar {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+

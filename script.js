@@ -2,32 +2,26 @@
 // ZENITHTAIL — script.js
 // ============================================================
 
-// 1. MODULE IMPORTS
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-    signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-    getFirestore, doc, setDoc, getDoc, addDoc,
-    collection, query, where, getDocs, orderBy
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// 1. LOCAL STORAGE HELPERS (no backend required — 100% free)
 
-// 2. FIREBASE CONFIG & INIT
-const firebaseConfig = {
-    apiKey: "AIzaSyAPIBH3ZyKjsth-Nk1qbHS6UNR5CVxV79k",
-    authDomain: "zenithtail.firebaseapp.com",
-    projectId: "zenithtail",
-    storageBucket: "zenithtail.firebasestorage.app",
-    messagingSenderId: "293020299978",
-    appId: "1:293020299978:web:a8a32c67c9839452a0ba33",
-    measurementId: "G-1NJ1CS271N"
-};
+function lsGet(key, fallback = null) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+    catch { return fallback; }
+}
+function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+function saveCartLocal()  { lsSet('zenith_cart', cart); }
+function loadCartLocal()  { cart = lsGet('zenith_cart', []); }
+
+function saveOrderLocal(order) {
+    const orders = lsGet('zenith_orders', []);
+    orders.unshift({ ...order, id: Date.now().toString(36) + Math.random().toString(36).slice(2,6) });
+    lsSet('zenith_orders', orders);
+}
+function loadOrdersLocal() { return lsGet('zenith_orders', []); }
+
+function saveUserLocal(user) { lsSet('zenith_user', user); currentUser = user; }
+function clearUserLocal()    { localStorage.removeItem('zenith_user'); currentUser = null; }
 
 // 3. APP STATE
 let currentUser = null;
@@ -36,6 +30,19 @@ let activeCategory = 'all';
 let detailSwiper = null;
 let currentDetailQty = 1;
 let selectedSize = null;
+let searchQuery = '';
+let sortBy = 'default';
+let wishlist = JSON.parse(localStorage.getItem('zenith_wishlist') || '[]');
+let appliedDiscount = null;
+let allAdminOrders = []; // cache for admin filter
+
+// Discount codes
+const DISCOUNT_CODES = {
+    'ZENITH10':  { type: 'percent', value: 10, label: '10% off' },
+    'WELCOME20': { type: 'percent', value: 20, label: '20% off' },
+    'PAWS15':    { type: 'percent', value: 15, label: '15% off' },
+    'FLAT50':    { type: 'fixed',   value: 50, label: '₹50 off' }
+};
 
 // 4. PRODUCT CATALOGUE
 const products = [
@@ -188,7 +195,7 @@ function hideSpinner() {
 // ============================================================
 
 window.showPage = (pageId, pid = null) => {
-    const pages = ['home-page', 'login-page', 'detail-page', 'checkout-page', 'thankyou-page', 'account-page', 'admin-page'];
+    const pages = ['home-page', 'login-page', 'detail-page', 'checkout-page', 'thankyou-page', 'account-page', 'admin-page', 'wishlist-page'];
     pages.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -220,8 +227,9 @@ window.showPage = (pageId, pid = null) => {
     }
 
     if (pageId === 'account-page') showAccountDashboard();
-    if (pageId === 'checkout-page') populateCheckoutSummary();
+    if (pageId === 'checkout-page') { appliedDiscount = null; populateCheckoutSummary(); }
     if (pageId === 'admin-page') loadAdminStats();
+    if (pageId === 'wishlist-page') renderWishlistPage();
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -283,18 +291,50 @@ function startDiscountTimer() {
     timerInterval = setInterval(tick, 1000);
 }
 
+function getFilteredSortedProducts() {
+    let list = activeCategory === 'all'
+        ? [...products]
+        : products.filter(p => p.category === activeCategory);
+
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        list = list.filter(p =>
+            p.title.toLowerCase().includes(q) ||
+            p.shortDesc.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q)
+        );
+    }
+
+    switch (sortBy) {
+        case 'price-asc':   list.sort((a, b) => a.price - b.price); break;
+        case 'price-desc':  list.sort((a, b) => b.price - a.price); break;
+        case 'rating':      list.sort((a, b) => b.rating - a.rating); break;
+        case 'discount':    list.sort((a, b) => (b.old - b.price) / b.old - (a.old - a.price) / a.old); break;
+        default:            list.sort((a, b) => b.sold - a.sold);
+    }
+    return list;
+}
+
 function renderGrid() {
     const grid = document.getElementById('main-grid');
     if (!grid) return;
 
-    const filtered = activeCategory === 'all'
-        ? products
-        : products.filter(p => p.category === activeCategory);
+    const filtered = getFilteredSortedProducts();
+
+    // Update heading / result count
+    const headingEl = document.getElementById('shop-heading');
+    const countEl = document.getElementById('shop-result-count');
+    if (headingEl) headingEl.textContent = searchQuery ? `Results for "${searchQuery}"` : 'The Premium Collection';
+    if (countEl) countEl.textContent = searchQuery || activeCategory !== 'all' ? `${filtered.length} product${filtered.length !== 1 ? 's' : ''}` : '';
 
     grid.innerHTML = filtered.length === 0
-        ? `<p class="text-center text-muted py-5">No products in this category yet.</p>`
+        ? `<div class="col-12 text-center py-5 text-muted">
+               <i class="bi bi-search fs-1 d-block mb-3 opacity-25"></i>
+               No products found. <button class="btn btn-link p-0" onclick="clearSearch()">Clear search</button>
+           </div>`
         : filtered.map(p => {
             const discount = Math.round((1 - p.price / p.old) * 100);
+            const inWishlist = wishlist.includes(p.id);
             const timerHtml = p.id === TIMER_PRODUCT_ID ? `
                 <div style="background:#fff3cd;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:0.72rem;font-weight:700;color:#856404;display:flex;align-items:center;justify-content:center;gap:6px;">
                     <i class="bi bi-alarm-fill"></i> Deal ends in:
@@ -302,14 +342,18 @@ function renderGrid() {
                 </div>` : '';
             return `
             <div class="col-11 col-sm-6 col-md-4">
-                <div class="product-card shadow-sm" onclick="showPage('detail-page', ${p.id})">
-                    <div class="product-img-box">
+                <div class="product-card shadow-sm">
+                    <div class="product-img-box" onclick="showPage('detail-page', ${p.id})" style="cursor:pointer;">
                         <span class="product-badge">${p.badge}</span>
                         <img src="images/${p.prefix}1.jpeg" alt="${p.title}" loading="lazy"
                              onerror="this.src='https://via.placeholder.com/400x400?text=ZenithTail'">
                         <span class="sold-badge">${p.sold.toLocaleString('en-IN')} sold</span>
+                        <button class="wishlist-btn ${inWishlist ? 'active' : ''}" data-pid="${p.id}"
+                                onclick="event.stopPropagation(); toggleWishlist(${p.id}, this)" title="${inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}">
+                            <i class="bi ${inWishlist ? 'bi-heart-fill' : 'bi-heart'}"></i>
+                        </button>
                     </div>
-                    <div class="p-3 text-center">
+                    <div class="p-3 text-center" onclick="showPage('detail-page', ${p.id})" style="cursor:pointer;">
                         <h5 class="fw-bold mb-1 small">${p.title}</h5>
                         <div class="product-stars mb-1">
                             ${starHtml(p.rating)}
@@ -328,7 +372,6 @@ function renderGrid() {
             </div>`;
         }).join('');
 
-    // Start timer if the timer product is visible
     if (filtered.some(p => p.id === TIMER_PRODUCT_ID)) {
         startDiscountTimer();
     }
@@ -336,17 +379,58 @@ function renderGrid() {
 
 window.filterProducts = (category) => {
     activeCategory = category;
+    searchQuery = '';
+    const ni = document.getElementById('navbar-search');
+    const mi = document.getElementById('mobile-search-input');
+    if (ni) ni.value = '';
+    if (mi) mi.value = '';
 
-    // Update pill styles
     document.querySelectorAll('.filter-pill').forEach(pill => {
         pill.classList.toggle('active', pill.id === `pill-${category}`);
     });
 
     renderGrid();
 
-    // Scroll to shop section
     const section = document.getElementById('shop-section');
     if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.handleSearch = (val) => {
+    searchQuery = val.trim();
+    // Sync both search inputs
+    const ni = document.getElementById('navbar-search');
+    const mi = document.getElementById('mobile-search-input');
+    if (ni && ni.value !== val) ni.value = val;
+    if (mi && mi.value !== val) mi.value = val;
+
+    showPage('home-page');
+    setTimeout(() => {
+        renderGrid();
+        const section = document.getElementById('shop-section');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+};
+
+window.clearSearch = () => {
+    searchQuery = '';
+    const ni = document.getElementById('navbar-search');
+    const mi = document.getElementById('mobile-search-input');
+    if (ni) ni.value = '';
+    if (mi) mi.value = '';
+    renderGrid();
+};
+
+window.handleSort = (val) => {
+    sortBy = val;
+    renderGrid();
+};
+
+window.toggleMobileSearch = () => {
+    const bar = document.getElementById('mobile-search-bar');
+    if (!bar) return;
+    const visible = bar.style.display !== 'none' && bar.style.display !== '';
+    bar.style.display = visible ? 'none' : 'block';
+    if (!visible) document.getElementById('mobile-search-input')?.focus();
 };
 
 // ============================================================
@@ -624,7 +708,125 @@ function updateCartDisplay(shouldSync = true) {
     const totalEl = document.getElementById('cart-total');
     if (totalEl) totalEl.textContent = `₹${total}`;
 
-    if (shouldSync) syncCartToFirebase();
+    if (shouldSync) saveCartLocal();
+}
+
+// ============================================================
+// WISHLIST
+// ============================================================
+
+window.toggleWishlist = (pid, btn) => {
+    const idx = wishlist.indexOf(pid);
+    if (idx === -1) {
+        wishlist.push(pid);
+        showToast('Added to wishlist ❤️');
+    } else {
+        wishlist.splice(idx, 1);
+        showToast('Removed from wishlist');
+    }
+    localStorage.setItem('zenith_wishlist', JSON.stringify(wishlist));
+    // Update all wishlist buttons for this product
+    document.querySelectorAll(`.wishlist-btn[data-pid="${pid}"]`).forEach(b => {
+        b.classList.toggle('active', wishlist.includes(pid));
+        b.innerHTML = `<i class="bi ${wishlist.includes(pid) ? 'bi-heart-fill' : 'bi-heart'}"></i>`;
+    });
+    // Update nav count
+    updateWishlistNavCount();
+};
+
+function updateWishlistNavCount() {
+    const badge = document.getElementById('wishlist-count-nav');
+    if (!badge) return;
+    if (wishlist.length > 0) {
+        badge.textContent = wishlist.length;
+        badge.style.display = 'inline';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function renderWishlistPage() {
+    const grid = document.getElementById('wishlist-grid');
+    if (!grid) return;
+
+    const wishlistProducts = products.filter(p => wishlist.includes(p.id));
+
+    if (wishlistProducts.length === 0) {
+        grid.innerHTML = `
+            <div class="col-12 text-center py-5 text-muted">
+                <i class="bi bi-heart fs-1 d-block mb-3 opacity-25"></i>
+                <p>Your wishlist is empty.</p>
+                <button class="btn btn-primary rounded-pill px-4 fw-bold" onclick="showPage('home-page')">Browse Products</button>
+            </div>`;
+        return;
+    }
+
+    grid.innerHTML = wishlistProducts.map(p => {
+        const discount = Math.round((1 - p.price / p.old) * 100);
+        return `
+            <div class="col-11 col-sm-6 col-md-4">
+                <div class="product-card shadow-sm">
+                    <div class="product-img-box" onclick="showPage('detail-page', ${p.id})" style="cursor:pointer;">
+                        <span class="product-badge">${p.badge}</span>
+                        <img src="images/${p.prefix}1.jpeg" alt="${p.title}" loading="lazy">
+                        <button class="wishlist-btn active" data-pid="${p.id}"
+                                onclick="event.stopPropagation(); toggleWishlist(${p.id}, this); renderWishlistPage()">
+                            <i class="bi bi-heart-fill"></i>
+                        </button>
+                    </div>
+                    <div class="p-3 text-center" onclick="showPage('detail-page', ${p.id})" style="cursor:pointer;">
+                        <h5 class="fw-bold mb-1 small">${p.title}</h5>
+                        <div class="product-stars mb-1">${starHtml(p.rating)}</div>
+                        <div class="mb-3">
+                            <span class="text-primary fw-bold fs-5">₹${p.price}</span>
+                            <small class="text-muted text-decoration-line-through ms-2">₹${p.old}</small>
+                            <span class="ms-1 badge bg-success-subtle text-success" style="font-size:0.65rem;">${discount}% OFF</span>
+                        </div>
+                        <button class="btn btn-primary w-100 rounded-pill small fw-bold">View Details →</button>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+// ============================================================
+// DISCOUNT CODES
+// ============================================================
+
+window.toggleDiscountSection = () => {
+    const area = document.getElementById('discount-input-area');
+    const chevron = document.getElementById('discount-chevron');
+    if (!area) return;
+    const visible = area.style.display !== 'none';
+    area.style.display = visible ? 'none' : 'block';
+    if (chevron) chevron.className = visible ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+};
+
+window.applyDiscount = () => {
+    const input = document.getElementById('discount-code');
+    const resultEl = document.getElementById('discount-result');
+    if (!input || !resultEl) return;
+
+    const code = input.value.trim().toUpperCase();
+    const disc = DISCOUNT_CODES[code];
+
+    if (!disc) {
+        resultEl.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Invalid code. Try ZENITH10, WELCOME20, or PAWS15</span>`;
+        appliedDiscount = null;
+        populateCheckoutSummary();
+        return;
+    }
+
+    appliedDiscount = { code, ...disc };
+    resultEl.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Code applied! ${disc.label}</span>`;
+    showToast(`Discount code applied — ${disc.label}! 🎉`);
+    populateCheckoutSummary();
+};
+
+function calculateDiscountedTotal(subtotal) {
+    if (!appliedDiscount) return subtotal;
+    if (appliedDiscount.type === 'percent') return Math.max(0, subtotal - Math.round(subtotal * appliedDiscount.value / 100));
+    return Math.max(0, subtotal - appliedDiscount.value);
 }
 
 function populateCheckoutSummary() {
@@ -632,23 +834,33 @@ function populateCheckoutSummary() {
     const totalEl = document.getElementById('checkout-total-display');
     if (!summaryEl) return;
 
-    const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const finalTotal = calculateDiscountedTotal(subtotal);
+    const saving = subtotal - finalTotal;
 
-    summaryEl.innerHTML = cart.map(i =>
+    let html = cart.map(i =>
         `<div class="d-flex justify-content-between mb-1">
             <span>${i.title} × ${i.qty}</span>
             <span class="fw-bold">₹${i.price * i.qty}</span>
          </div>`
     ).join('');
 
-    if (totalEl) totalEl.textContent = `₹${total}`;
+    if (appliedDiscount) {
+        html += `<div class="d-flex justify-content-between mb-1 text-success fw-bold">
+            <span><i class="bi bi-tag-fill me-1"></i>Discount (${appliedDiscount.code})</span>
+            <span>−₹${saving}</span>
+         </div>`;
+    }
+
+    summaryEl.innerHTML = html;
+    if (totalEl) totalEl.textContent = `₹${finalTotal}`;
 }
 
 // ============================================================
 // 10. CHECKOUT  (single authoritative definition)
 // ============================================================
 
-window.handleFinalOrder = async (event) => {
+window.handleFinalOrder = (event) => {
     event.preventDefault();
 
     if (cart.length === 0) {
@@ -659,7 +871,9 @@ window.handleFinalOrder = async (event) => {
     const name    = document.getElementById('custName').value.trim();
     const phone   = document.getElementById('custPhone').value.trim();
     const address = document.getElementById('custAddress').value.trim();
-    const total   = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const total    = calculateDiscountedTotal(subtotal);
+    const discountLine = appliedDiscount ? `\n*Discount (${appliedDiscount.code}):* −₹${subtotal - total}` : '';
 
     // Build WhatsApp URL BEFORE any async work so the browser allows window.open
     const msgText =
@@ -669,6 +883,7 @@ window.handleFinalOrder = async (event) => {
         `*Address:* ${address}\n\n` +
         `*Items:*\n` +
         cart.map(i => `• ${i.title} ×${i.qty} — ₹${i.price * i.qty}`).join('\n') +
+        discountLine +
         `\n\n*Total: ₹${total}*`;
 
     window.open(`https://api.whatsapp.com/send?phone=919341784664&text=${encodeURIComponent(msgText)}`, '_blank');
@@ -682,134 +897,137 @@ window.handleFinalOrder = async (event) => {
             customerPhone: phone,
             deliveryAddress: address,
             items: cart.map(i => ({ id: i.id, title: i.title, price: i.price, qty: i.qty })),
-            total: `₹${total}`,
-            date: new Date(),
+            subtotal: subtotal,
+            total: total,
+            totalDisplay: `₹${total}`,
+            discount: appliedDiscount ? { code: appliedDiscount.code, saving: subtotal - total } : null,
+            date: new Date().toISOString(),
             status: 'Processing'
         };
 
-        await addDoc(collection(db, 'orders'), orderData);
+        saveOrderLocal(orderData);
 
         // Clear cart & form
         cart = [];
+        saveCartLocal();
         updateCartDisplay(false);
         document.getElementById('custName').value = '';
         document.getElementById('custPhone').value = '';
         document.getElementById('custAddress').value = '';
 
-        // Clear saved cart in Firebase
-        if (currentUser) {
-            await setDoc(doc(db, 'users', currentUser.uid), { activeCart: [] }, { merge: true });
-        }
-
         showPage('thankyou-page');
     } catch (err) {
         console.error('Order error:', err);
-        showToast('Could not save order. Please check your connection.', 'danger');
+        showToast('Something went wrong. Please try again.', 'danger');
     } finally {
         hideSpinner();
     }
 };
 
 // ============================================================
-// 11. FIREBASE DATA SYNC
+// 11. LOCAL DATA SYNC (localStorage — no backend needed)
 // ============================================================
 
-async function syncCartToFirebase() {
-    if (!currentUser) return;
-    try {
-        await setDoc(doc(db, 'users', currentUser.uid), { activeCart: cart }, { merge: true });
-    } catch (e) {
-        console.error('Cart sync error:', e);
-    }
-}
-
-async function loadSavedCart() {
-    if (!currentUser) return;
-    try {
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        if (userDoc.exists() && userDoc.data().activeCart?.length) {
-            cart = userDoc.data().activeCart;
-            updateCartDisplay(false);
-        }
-    } catch (e) {
-        console.error('Cart load error:', e);
-    }
-}
-
-async function loadUserOrders() {
-    if (!currentUser) return;
-    const container = document.getElementById('orders-container');
-    if (!container) return;
-
-    try {
-        const q = query(
-            collection(db, 'orders'),
-            where('userId', '==', currentUser.uid),
-            orderBy('date', 'desc')
-        );
-        const snap = await getDocs(q);
-
-        container.innerHTML = snap.empty
-            ? `<p class="text-muted small">No orders yet — go shop! 🐾</p>`
-            : snap.docs.map(d => {
-                const o = d.data();
-                const dateStr = o.date?.toDate ? o.date.toDate().toLocaleDateString('en-IN') : 'N/A';
-                return `
-                    <div class="p-3 border rounded-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <div>
-                                <span class="fw-bold small">Order #${d.id.slice(0, 6).toUpperCase()}</span>
-                                <span class="text-muted small ms-2">${dateStr}</span>
-                            </div>
-                            <span class="order-badge bg-warning-subtle text-warning">${o.status || 'Processing'}</span>
-                        </div>
-                        <div class="small text-muted">${o.items?.map(i => `${i.title} ×${i.qty}`).join(', ')}</div>
-                        <div class="fw-bold text-primary small mt-1">${o.total}</div>
-                    </div>`;
-            }).join('');
-    } catch (e) {
-        console.error('Orders load error:', e);
-        container.innerHTML = `<p class="text-muted small">Could not load orders.</p>`;
-    }
-}
-
 // ============================================================
-// 12. AUTH
+// 12. AUTH  (localStorage-based — no backend, 100% free)
 // ============================================================
+
+window.loginWithGoogle = () => {
+    // Toggle the Google name form
+    const form = document.getElementById('google-login-form');
+    if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+
+window.completeGoogleLogin = () => {
+    const nameEl  = document.getElementById('google-name');
+    const emailEl = document.getElementById('google-email');
+    const name  = nameEl?.value.trim();
+    const email = emailEl?.value.trim();
+    if (!name) { showToast('Please enter your name', 'warning'); return; }
+
+    const uid = 'local_' + (email || name).replace(/\W/g, '').toLowerCase() + '_' + Date.now().toString(36);
+    const user = {
+        uid,
+        displayName: name,
+        email: email || '',
+        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=DEAD6F&color=fff&size=64`
+    };
+    saveUserLocal(user);
+    loadCartLocal();
+    updateCartDisplay(false);
+    applyAuthUI(user);
+    showPage('home-page');
+    showToast(`Welcome, ${name}! 🐾`);
+};
 
 window.login = () => {
-    const email = document.getElementById('email').value;
-    const pass  = document.getElementById('password').value;
-    showSpinner();
-    signInWithEmailAndPassword(auth, email, pass)
-        .then(() => showPage('home-page'))
-        .catch(err => { showToast(err.message, 'danger'); hideSpinner(); });
+    const email = document.getElementById('email').value.trim();
+    const pass  = document.getElementById('password').value.trim();
+    if (!email || !pass) { showToast('Enter email and password', 'warning'); return; }
+
+    // Check stored accounts
+    const accounts = lsGet('zenith_accounts', {});
+    if (!accounts[email] || accounts[email].pass !== btoa(pass)) {
+        showToast('Email or password incorrect', 'danger');
+        return;
+    }
+    const u = accounts[email];
+    const user = { uid: u.uid, displayName: u.name, email, photoURL: u.photoURL };
+    saveUserLocal(user);
+    loadCartLocal();
+    updateCartDisplay(false);
+    applyAuthUI(user);
+    showPage('home-page');
+    showToast(`Welcome back, ${u.name}! 🐾`);
 };
 
 window.signup = () => {
-    const email = document.getElementById('email').value;
-    const pass  = document.getElementById('password').value;
-    showSpinner();
-    createUserWithEmailAndPassword(auth, email, pass)
-        .then(() => { showToast('Account created! Welcome 🐾'); showPage('home-page'); })
-        .catch(err => { showToast(err.message, 'danger'); hideSpinner(); });
-};
+    const email = document.getElementById('email').value.trim();
+    const pass  = document.getElementById('password').value.trim();
+    if (!email || !pass) { showToast('Enter email and password', 'warning'); return; }
+    if (pass.length < 6) { showToast('Password must be at least 6 characters', 'warning'); return; }
 
-window.loginWithGoogle = () => {
-    showSpinner();
-    signInWithPopup(auth, provider)
-        .then(() => showPage('home-page'))
-        .catch(err => { showToast(err.message, 'danger'); hideSpinner(); });
+    const accounts = lsGet('zenith_accounts', {});
+    if (accounts[email]) { showToast('An account with this email already exists', 'warning'); return; }
+
+    const uid = 'local_' + email.replace(/\W/g, '') + '_' + Date.now().toString(36);
+    const name = email.split('@')[0];
+    const photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=DEAD6F&color=fff&size=64`;
+    accounts[email] = { uid, name, pass: btoa(pass), photoURL };
+    lsSet('zenith_accounts', accounts);
+
+    const user = { uid, displayName: name, email, photoURL };
+    saveUserLocal(user);
+    applyAuthUI(user);
+    showPage('home-page');
+    showToast('Account created! Welcome 🐾');
 };
 
 window.logout = () => {
-    signOut(auth).then(() => {
-        cart = [];
-        updateCartDisplay(false);
-        showPage('home-page');
-        showToast('Logged out. See you soon! 🐾');
-    });
+    cart = [];
+    saveCartLocal();
+    updateCartDisplay(false);
+    clearUserLocal();
+    applyAuthUI(null);
+    showPage('home-page');
+    showToast('Logged out. See you soon! 🐾');
 };
+
+function applyAuthUI(user) {
+    const loginBtn    = document.getElementById('login-btn');
+    const userProfile = document.getElementById('user-profile');
+    if (user) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (userProfile) {
+            userProfile.style.display = 'block';
+            const pic = document.getElementById('user-pic');
+            if (pic) pic.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName||'U')}&background=DEAD6F&color=fff`;
+        }
+    } else {
+        if (loginBtn) loginBtn.style.display = 'block';
+        if (userProfile) userProfile.style.display = 'none';
+    }
+}
 
 // ============================================================
 // 13. ACCOUNT DASHBOARD
@@ -836,6 +1054,62 @@ async function showAccountDashboard() {
     await loadUserOrders();
 }
 
+async function loadUserOrders() {
+    if (!currentUser) return;
+    const container = document.getElementById('orders-container');
+    if (!container) return;
+
+    try {
+        const allOrders = loadOrdersLocal();
+        const myOrders  = allOrders.filter(o => o.userId === currentUser.uid);
+
+        let totalSpent = 0;
+        let orderCount = myOrders.length;
+
+        if (myOrders.length === 0) {
+            container.innerHTML = `<p class="text-muted small">No orders yet — go shop! 🐾</p>`;
+        } else {
+            container.innerHTML = myOrders.map(o => {
+                const dateStr = o.date ? new Date(o.date).toLocaleDateString('en-IN') : 'N/A';
+                const amount = typeof o.total === 'number' ? o.total : 0;
+                totalSpent += amount;
+                const status = o.status || 'Processing';
+                const statusColors = { Processing: 'warning', Confirmed: 'primary', Shipped: 'info', Delivered: 'success' };
+                const statusClass = statusColors[status] || 'secondary';
+                return `
+                    <div class="p-3 border rounded-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <div>
+                                <span class="fw-bold small">Order #${(o.id||'').slice(0, 6).toUpperCase()}</span>
+                                <span class="text-muted small ms-2">${dateStr}</span>
+                            </div>
+                            <span class="badge bg-${statusClass}-subtle text-${statusClass} rounded-pill px-2">${status}</span>
+                        </div>
+                        <div class="small text-muted">${o.items?.map(i => `${i.title} ×${i.qty}`).join(', ')}</div>
+                        <div class="fw-bold text-primary small mt-1">₹${amount.toLocaleString('en-IN')}</div>
+                        ${o.discount ? `<div class="text-success small">Discount applied: ${o.discount.code} (−₹${o.discount.saving})</div>` : ''}
+                    </div>`;
+            }).join('');
+
+            // Update spending stats
+            const countEl = document.getElementById('dash-order-count');
+            const spentEl = document.getElementById('dash-total-spent');
+            const loyaltyEl = document.getElementById('dash-loyalty-badge');
+            if (countEl) countEl.textContent = orderCount;
+            if (spentEl) spentEl.textContent = `₹${totalSpent.toLocaleString('en-IN')}`;
+            if (loyaltyEl) {
+                const tier = totalSpent >= 2000 ? { label: '🥇 Gold Member', cls: 'loyalty-gold' }
+                           : totalSpent >= 1000 ? { label: '🥈 Silver Member', cls: 'loyalty-silver' }
+                           : { label: '🥉 Bronze Member', cls: 'loyalty-bronze' };
+                loyaltyEl.innerHTML = `<span class="loyalty-tier-badge ${tier.cls}">${tier.label}</span>`;
+            }
+        }
+    } catch (e) {
+        console.error('Orders load error:', e);
+        container.innerHTML = `<p class="text-muted small">Could not load orders.</p>`;
+    }
+}
+
 // ============================================================
 // 14. ADMIN PANEL
 // ============================================================
@@ -849,80 +1123,324 @@ window.accessAdmin = () => {
     }
 };
 
-async function loadAdminStats() {
-    const listEl = document.getElementById('admin-order-list');
-    if (listEl) listEl.innerHTML = `<div class="text-muted small">Loading...</div>`;
+// Chart instances
+const adminCharts = {};
 
-    try {
-        const snap = await getDocs(query(collection(db, 'orders'), orderBy('date', 'desc')));
-
-        let totalRevenue = 0;
-        const productCounts = {};
-        let html = '';
-
-        snap.forEach(d => {
-            const o = d.data();
-            const amount = parseInt((o.total || '').replace(/[^0-9]/g, '')) || 0;
-            totalRevenue += amount;
-
-            (o.items || []).forEach(item => {
-                productCounts[item.title] = (productCounts[item.title] || 0) + (item.qty || 1);
-            });
-
-            const dateStr = o.date?.toDate ? o.date.toDate().toLocaleDateString('en-IN') : '';
-            html += `
-                <div class="d-flex justify-content-between align-items-start border-bottom py-2">
-                    <div>
-                        <span class="fw-bold">${o.customerName || 'Guest'}</span>
-                        <span class="text-muted ms-2 small">${o.customerPhone || ''}</span>
-                        <div class="text-muted small">${o.deliveryAddress || ''}</div>
-                        <div class="text-muted small">${o.items?.map(i => `${i.title} ×${i.qty}`).join(', ')}</div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-bold text-primary">${o.total}</div>
-                        <small class="text-muted">${dateStr}</small>
-                        <div><span class="order-badge bg-warning-subtle text-warning">${o.status || 'Processing'}</span></div>
-                    </div>
-                </div>`;
-        });
-
-        document.getElementById('admin-total-orders').textContent = snap.size;
-        document.getElementById('admin-revenue').textContent = `₹${totalRevenue.toLocaleString('en-IN')}`;
-        if (listEl) listEl.innerHTML = html || `<p class="text-muted small">No orders yet.</p>`;
-
-        renderAdminChart(productCounts);
-    } catch (e) {
-        console.error('Admin load error:', e);
-        if (listEl) listEl.innerHTML = `<p class="text-muted small">Error loading data.</p>`;
+function destroyChart(key) {
+    if (adminCharts[key]) {
+        adminCharts[key].destroy();
+        delete adminCharts[key];
     }
 }
 
-let myChart = null;
-function renderAdminChart(data) {
-    const canvas = document.getElementById('adminChart');
-    if (!canvas) return;
-    if (myChart) myChart.destroy();
+function loadAdminStats() {
+    const listEl = document.getElementById('admin-order-list');
+    if (listEl) listEl.innerHTML = `<div class="text-muted py-3 text-center"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading analytics…</div>`;
 
-    myChart = new window.Chart(canvas.getContext('2d'), {
-        type: 'bar',
+    allAdminOrders = loadOrdersLocal();
+    computeAndRenderAdminStats(allAdminOrders);
+}
+
+function computeAndRenderAdminStats(orders) {
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const weekAgo = new Date(now - 7 * 86400000);
+
+    let totalRevenue = 0, weekRevenue = 0, todayOrders = 0;
+    const productUnits = {}, productRevenue = {}, statusCounts = {}, customerMap = {};
+    const revenueByDay = {};
+
+    // Seed last 30 days
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date(now - i * 86400000);
+        revenueByDay[d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })] = 0;
+    }
+
+    orders.forEach(o => {
+        const amount = typeof o.total === 'number' ? o.total : parseInt((o.totalDisplay || o.total || '').replace(/[^0-9]/g, '')) || 0;
+        const date = o.date ? new Date(o.date) : new Date(0);
+        const dateKey = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+        totalRevenue += amount;
+        if (date >= weekAgo) weekRevenue += amount;
+        if (date.toDateString() === todayStr) todayOrders++;
+        if (revenueByDay.hasOwnProperty(dateKey)) revenueByDay[dateKey] += amount;
+
+        const status = o.status || 'Processing';
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+
+        (o.items || []).forEach(item => {
+            productUnits[item.title] = (productUnits[item.title] || 0) + (item.qty || 1);
+            productRevenue[item.title] = (productRevenue[item.title] || 0) + item.price * (item.qty || 1);
+        });
+
+        const uid = o.userId || o.customerPhone || 'guest';
+        if (!customerMap[uid]) customerMap[uid] = { name: o.customerName, phone: o.customerPhone, orders: 0, spent: 0 };
+        customerMap[uid].orders++;
+        customerMap[uid].spent += amount;
+    });
+
+    const totalOrders = orders.length;
+    const uniqueCustomers = Object.keys(customerMap).length;
+    const aov = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+    const repeatCustomers = Object.values(customerMap).filter(c => c.orders > 1).length;
+    const repeatRate = uniqueCustomers > 0 ? Math.round(repeatCustomers / uniqueCustomers * 100) : 0;
+
+    // Update KPI cards
+    document.getElementById('admin-total-orders').textContent = totalOrders;
+    document.getElementById('admin-revenue').textContent = `₹${totalRevenue.toLocaleString('en-IN')}`;
+    document.getElementById('admin-aov').textContent = `₹${aov.toLocaleString('en-IN')}`;
+    document.getElementById('admin-customers').textContent = uniqueCustomers;
+    document.getElementById('admin-orders-today').textContent = `${todayOrders} today`;
+    document.getElementById('admin-revenue-week').textContent = `₹${weekRevenue.toLocaleString('en-IN')} this week`;
+    document.getElementById('admin-repeat-rate').textContent = `${repeatRate}% repeat`;
+
+    // Render charts
+    renderRevenueChart(revenueByDay);
+    renderStatusChart(statusCounts);
+    renderAdminChart(productUnits);
+    renderRevenueByProductChart(productRevenue);
+
+    // Render orders table
+    renderAdminOrderList(orders);
+
+    // Render customer overview
+    renderCustomerList(customerMap);
+}
+
+function renderRevenueChart(revenueByDay) {
+    const canvas = document.getElementById('revenueChart');
+    if (!canvas) return;
+    destroyChart('revenue');
+
+    const labels = Object.keys(revenueByDay);
+    const data = Object.values(revenueByDay);
+
+    adminCharts.revenue = new window.Chart(canvas.getContext('2d'), {
+        type: 'line',
         data: {
-            labels: Object.keys(data),
+            labels,
             datasets: [{
-                label: 'Units Sold',
-                data: Object.values(data),
-                backgroundColor: '#DEAD6F',
-                borderRadius: 10
+                label: 'Revenue (₹)',
+                data,
+                borderColor: '#DEAD6F',
+                backgroundColor: 'rgba(222,173,111,0.12)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+                pointBackgroundColor: '#DEAD6F',
+                borderWidth: 2
             }]
         },
         options: {
             plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
-                x: { grid: { display: false } }
+                y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { callback: v => `₹${v}` } },
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0 } }
             }
         }
     });
 }
+
+function renderStatusChart(statusCounts) {
+    const canvas = document.getElementById('statusChart');
+    if (!canvas) return;
+    destroyChart('status');
+
+    const labels = Object.keys(statusCounts);
+    const colorMap = { Processing: '#ff9800', Confirmed: '#2196f3', Shipped: '#9c27b0', Delivered: '#4caf50' };
+
+    adminCharts.status = new window.Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: Object.values(statusCounts),
+                backgroundColor: labels.map(l => colorMap[l] || '#aaa'),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } }
+            },
+            cutout: '60%'
+        }
+    });
+}
+
+function renderAdminChart(data) {
+    const canvas = document.getElementById('adminChart');
+    if (!canvas) return;
+    destroyChart('units');
+
+    const shortLabels = Object.keys(data).map(l => l.length > 18 ? l.slice(0, 16) + '…' : l);
+
+    adminCharts.units = new window.Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: shortLabels,
+            datasets: [{
+                label: 'Units Sold',
+                data: Object.values(data),
+                backgroundColor: '#DEAD6F',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { stepSize: 1 } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+function renderRevenueByProductChart(data) {
+    const canvas = document.getElementById('revenueByProductChart');
+    if (!canvas) return;
+    destroyChart('revProduct');
+
+    const shortLabels = Object.keys(data).map(l => l.length > 18 ? l.slice(0, 16) + '…' : l);
+    const colors = ['#DEAD6F', '#5b8dee', '#43b08c', '#e05252', '#9c6bd6'];
+
+    adminCharts.revProduct = new window.Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: shortLabels,
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: Object.values(data),
+                backgroundColor: colors,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { callback: v => `₹${v}` } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+function getStatusBadgeHtml(status) {
+    const map = {
+        Processing: 'bg-warning-subtle text-warning',
+        Confirmed:  'bg-primary-subtle text-primary',
+        Shipped:    'bg-purple-subtle text-purple',
+        Delivered:  'bg-success-subtle text-success'
+    };
+    return `<span class="order-status-badge ${map[status] || 'bg-secondary-subtle text-secondary'}">${status || 'Processing'}</span>`;
+}
+
+function renderAdminOrderList(orders) {
+    const listEl = document.getElementById('admin-order-list');
+    if (!listEl) return;
+
+    if (orders.length === 0) {
+        listEl.innerHTML = `<p class="text-muted small py-3 text-center">No orders yet.</p>`;
+        return;
+    }
+
+    listEl.innerHTML = `
+        <table class="admin-orders-table w-100">
+            <thead>
+                <tr>
+                    <th>Order ID</th><th>Customer</th><th>Items</th>
+                    <th>Total</th><th>Date</th><th>Status</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${orders.map(o => {
+                    const dateStr = o.date?.toDate ? o.date.toDate().toLocaleDateString('en-IN') : '—';
+                    const amount = typeof o.total === 'number' ? `₹${o.total}` : (o.totalDisplay || o.total || '—');
+                    const status = o.status || 'Processing';
+                    const nextStatuses = { Processing: ['Confirmed', 'Delivered'], Confirmed: ['Shipped', 'Delivered'], Shipped: ['Delivered'] };
+                    const actions = (nextStatuses[status] || []).map(s =>
+                        `<button class="btn btn-xs admin-status-btn" onclick="updateOrderStatus('${o.id}', '${s}')">${s}</button>`
+                    ).join('');
+                    return `
+                        <tr>
+                            <td class="fw-bold text-muted" style="font-size:0.72rem;">#${o.id.slice(0,6).toUpperCase()}</td>
+                            <td>
+                                <div class="fw-bold">${o.customerName || 'Guest'}</div>
+                                <div class="text-muted" style="font-size:0.72rem;">+91 ${o.customerPhone || ''}</div>
+                            </td>
+                            <td style="font-size:0.75rem;">${(o.items || []).map(i => `${i.title.split(' ').slice(0,2).join(' ')} ×${i.qty}`).join('<br>')}</td>
+                            <td class="fw-bold text-primary">${amount}</td>
+                            <td class="text-muted" style="font-size:0.75rem;">${dateStr}</td>
+                            <td>${getStatusBadgeHtml(status)}</td>
+                            <td>${actions || '<span class="text-muted" style="font-size:0.72rem;">Done</span>'}</td>
+                        </tr>`;
+                }).join('')}
+            </tbody>
+        </table>`;
+}
+
+function renderCustomerList(customerMap) {
+    const el = document.getElementById('admin-customer-list');
+    if (!el) return;
+
+    const customers = Object.values(customerMap).sort((a, b) => b.spent - a.spent);
+
+    if (customers.length === 0) {
+        el.innerHTML = `<p class="text-muted small">No customers yet.</p>`;
+        return;
+    }
+
+    el.innerHTML = `
+        <table class="admin-orders-table w-100">
+            <thead>
+                <tr><th>Customer</th><th>Phone</th><th>Orders</th><th>Total Spent</th><th>Tier</th></tr>
+            </thead>
+            <tbody>
+                ${customers.map(c => {
+                    const tier = c.spent >= 2000 ? '🥇 Gold' : c.spent >= 1000 ? '🥈 Silver' : '🥉 Bronze';
+                    return `<tr>
+                        <td class="fw-bold">${c.name || 'Guest'}</td>
+                        <td class="text-muted" style="font-size:0.75rem;">${c.phone ? '+91 ' + c.phone : '—'}</td>
+                        <td>${c.orders}</td>
+                        <td class="fw-bold text-primary">₹${c.spent.toLocaleString('en-IN')}</td>
+                        <td>${tier}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>`;
+}
+
+window.filterAdminOrders = () => {
+    const statusFilter = document.getElementById('admin-status-filter')?.value || 'all';
+    const searchText = (document.getElementById('admin-search-input')?.value || '').toLowerCase();
+
+    let filtered = allAdminOrders;
+    if (statusFilter !== 'all') filtered = filtered.filter(o => (o.status || 'Processing') === statusFilter);
+    if (searchText) filtered = filtered.filter(o =>
+        (o.customerName || '').toLowerCase().includes(searchText) ||
+        (o.customerPhone || '').includes(searchText)
+    );
+
+    renderAdminOrderList(filtered);
+};
+
+window.updateOrderStatus = async (orderId, newStatus) => {
+    try {
+        await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+        showToast(`Order marked as ${newStatus} ✓`);
+        // Update in cache and re-render
+        const order = allAdminOrders.find(o => o.id === orderId);
+        if (order) order.status = newStatus;
+        filterAdminOrders();
+    } catch (e) {
+        console.error('Status update error:', e);
+        showToast('Could not update status. Check permissions.', 'danger');
+    }
+};
 
 // ============================================================
 // 15. PET PERSONALITY QUIZ
@@ -1102,30 +1620,20 @@ window.retakeQuiz = () => {
 };
 
 // ============================================================
-// 16. AUTH STATE LISTENER
+// 16. AUTH STATE INIT (from localStorage on page load)
 // ============================================================
 
-onAuthStateChanged(auth, async (user) => {
-    hideSpinner();
-    const loginBtn    = document.getElementById('login-btn');
-    const userProfile = document.getElementById('user-profile');
-
-    if (user) {
-        currentUser = user;
-        loginBtn?.style && (loginBtn.style.display = 'none');
-        if (userProfile) {
-            userProfile.style.display = 'block';
-            document.getElementById('user-pic').src = user.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.displayName || 'U') + '&background=DEAD6F&color=fff';
-        }
-        await loadSavedCart();
-    } else {
-        currentUser = null;
-        loginBtn?.style && (loginBtn.style.display = 'block');
-        if (userProfile) userProfile.style.display = 'none';
-        cart = [];
+function initAuthState() {
+    const savedUser = lsGet('zenith_user', null);
+    if (savedUser) {
+        currentUser = savedUser;
+        loadCartLocal();
+        applyAuthUI(savedUser);
         updateCartDisplay(false);
+    } else {
+        applyAuthUI(null);
     }
-});
+}
 
 // ============================================================
 // 16. INITIALISE ON DOM READY
@@ -1145,5 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fadeEffect: { crossFade: true }
     });
 
+    initAuthState();
     renderGrid();
+    updateWishlistNavCount();
 });
