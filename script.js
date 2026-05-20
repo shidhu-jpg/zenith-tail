@@ -1358,7 +1358,7 @@ function renderAdminOrderList(orders) {
             </thead>
             <tbody>
                 ${orders.map(o => {
-                    const dateStr = o.date?.toDate ? o.date.toDate().toLocaleDateString('en-IN') : '—';
+                    const dateStr = o.date ? new Date(o.date).toLocaleDateString('en-IN') : '—';
                     const amount = typeof o.total === 'number' ? `₹${o.total}` : (o.totalDisplay || o.total || '—');
                     const status = o.status || 'Processing';
                     const nextStatuses = { Processing: ['Confirmed', 'Delivered'], Confirmed: ['Shipped', 'Delivered'], Shipped: ['Delivered'] };
@@ -1428,19 +1428,65 @@ window.filterAdminOrders = () => {
     renderAdminOrderList(filtered);
 };
 
-window.updateOrderStatus = async (orderId, newStatus) => {
+window.updateOrderStatus = (orderId, newStatus) => {
     try {
-        await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+        const orders = lsGet('zenith_orders', []);
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = newStatus;
+            lsSet('zenith_orders', orders);
+        }
         showToast(`Order marked as ${newStatus} ✓`);
-        // Update in cache and re-render
-        const order = allAdminOrders.find(o => o.id === orderId);
-        if (order) order.status = newStatus;
+        const cached = allAdminOrders.find(o => o.id === orderId);
+        if (cached) cached.status = newStatus;
         filterAdminOrders();
     } catch (e) {
         console.error('Status update error:', e);
-        showToast('Could not update status. Check permissions.', 'danger');
+        showToast('Could not update status.', 'danger');
     }
 };
+
+// ============================================================
+// 15. GRAND SLAM OFFER — Bundle + Countdown
+// ============================================================
+
+window.addBundleToCart = () => {
+    // Add both grooming brushes (id 1 and id 2) as the Starter Pack
+    [1, 2].forEach(pid => {
+        const item = products.find(p => p.id === pid);
+        if (!item) return;
+        const existing = cart.find(c => c.cartKey === String(pid));
+        if (existing) {
+            existing.qty += 1;
+        } else {
+            cart.push({ id: item.id, cartKey: String(pid), title: item.title, price: item.price, prefix: item.prefix, qty: 1 });
+        }
+    });
+    updateCartDisplay();
+    showToast('Complete Grooming Pack added to bag! 🐾');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('cartMenu')).show();
+};
+
+function startOfferCountdown() {
+    const key = 'zenith_offer_end';
+    let end = parseInt(localStorage.getItem(key) || '0');
+    if (!end || end < Date.now()) {
+        end = Date.now() + 24 * 60 * 60 * 1000;
+        localStorage.setItem(key, end);
+    }
+    function tick() {
+        const el = document.getElementById('offer-timer');
+        if (!el) return;
+        const diff = end - Date.now();
+        if (diff <= 0) { el.textContent = '00:00:00'; return; }
+        const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        el.textContent = `${h}:${m}:${s}`;
+    }
+    tick();
+    setInterval(tick, 1000);
+}
 
 // ============================================================
 // 15. PET PERSONALITY QUIZ
@@ -1645,10 +1691,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loop: true,
         autoplay: { delay: 4000, disableOnInteraction: false },
         pagination: { el: '.hero-swiper .swiper-pagination', clickable: true },
-        navigation: {
-            nextEl: '.hero-swiper .swiper-button-next',
-            prevEl: '.hero-swiper .swiper-button-prev'
-        },
         effect: 'fade',
         fadeEffect: { crossFade: true }
     });
@@ -1656,4 +1698,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initAuthState();
     renderGrid();
     updateWishlistNavCount();
+    startOfferCountdown();
 });

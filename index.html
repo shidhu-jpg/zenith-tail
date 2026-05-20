@@ -40,7 +40,7 @@
 
     <!-- Promo Bar -->
     <div class="promo-bar">
-        🎁 Free Mystery Gift with every order &nbsp;|&nbsp; 🚚 Free Shipping above ₹499 &nbsp;|&nbsp; 💰 Cash on Delivery Available &nbsp;|&nbsp; ⭐ 4.8/5 · 1000+ Happy Pet Parents
+        <span class="promo-text">🎁 Free Mystery Gift with every order &nbsp;|&nbsp; 🚚 Free Shipping above ₹499 &nbsp;|&nbsp; 💰 Cash on Delivery Available &nbsp;|&nbsp; ⭐ 4.8/5 · 1000+ Happy Pet Parents</span>
     </div>
 
     <!-- Navbar -->
@@ -134,8 +134,6 @@
                     </div>
                 </div>
                 <div class="swiper-pagination"></div>
-                <div class="swiper-button-prev"></div>
-                <div class="swiper-button-next"></div>
             </div>
 
             <!-- Trust Strip -->
@@ -222,6 +220,234 @@
                 </div>
 
                 <div class="row g-4 justify-content-center" id="main-grid"></div>
+            </div>
+
+            <!-- ===== HORMOZI GRAND SLAM OFFER ===== -->
+            <div class="offer-section">
+                <div class="container">
+                    <div class="text-center mb-5">
+                        <div class="offer-eyebrow">ONLY 23 STARTER PACKS LEFT AT THIS PRICE</div>
+                        <h2 class="offer-headline">The Complete Grooming Pack<br><span>Everything. One Box. One Price.</span></h2>
+                        <p class="offer-subheadline mx-auto">Stop buying products one at a time. Get our two best-selling brushes — plus 3 free bonuses — shipped to your door for less than the price of one salon visit.</p>
+                    </div>
+
+                    <div class="row g-4 align-items-start justify-content-center">
+                        <!-- Value Stack -->
+                        <div class="col-md-5">
+                            <div class="offer-stack">
+                                <div class="offer-stack-header">What's Inside The Pack</div>
+
+                                <div class="offer-item">
+                                    <div class="offer-check">✓</div>
+                                    <div class="flex-grow-1">
+                                        <div class="offer-item-name">Zenith-Mist 3-in-1 Brush</div>
+                                        <div class="offer-item-desc">Spray, brush & detangle — grooming 3× faster</div>
+                                    </div>
+                                    <div class="offer-item-value">₹999</div>
+                                </div>
+
+                                <div class="offer-item">
+                                    <div class="offer-check">✓</div>
+                                    <div class="flex-grow-1">
+                                        <div class="offer-item-name">One-Click Pro-Clean Brush</div>
+                                        <div class="offer-item-desc">Deep-reach steel pins, one-click fur ejector</div>
+                                    </div>
+                                    <div class="offer-item-value">₹699</div>
+                                </div>
+
+                                <div class="offer-item">
+                                    <div class="offer-check offer-check-gold">★</div>
+                                    <div class="flex-grow-1">
+                                        <div class="offer-item-name">BONUS #1 — Mystery Gift Box <span class="offer-item-badge">FREE</span></div>
+                                        <div class="offer-item-desc">Surprise pet treat included with every pack</div>
+                                    </div>
+                                    <div class="offer-item-value">₹299</div>
+                                </div>
+
+                                <div class="offer-item">
+                                    <div class="offer-check offer-check-gold">★</div>
+                                    <div class="flex-grow-1">
+                                        <div class="offer-item-name">BONUS #2 — Expert Grooming Guide <span class="offer-item-badge">FREE</span></div>
+                                        <div class="offer-item-desc">PDF: 20 pro tips to make your pet love grooming</div>
+                                    </div>
+                                    <div class="offer-item-value">₹199</div>
+                                </div>
+
+                                <div class="offer-item" style="border-bottom:none;">
+                                    <div class="offer-check offer-check-gold">★</div>
+                                    <div class="flex-grow-1">
+                                        <div class="offer-item-name">BONUS #3 — WhatsApp VIP Support <span class="offer-item-badge">FREE</span></div>
+                                        <div class="offer-item-desc">Direct line to our pet care team, always</div>
+                                    </div>
+                                    <div class="offer-item-value">₹499</div>
+                                </div>
+
+                                <hr class="offer-divider">
+
+                                <div class="offer-total-row">
+                                    <span class="offer-total-label">Total Value</span>
+                                    <span class="offer-total-value">₹2,695</span>
+                                </div>
+                                <div class="offer-your-price-row">
+                                    <span class="offer-price-label">Your Price Today</span>
+                                    <span class="offer-price-value">₹699</span>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <span class="offer-savings-pill">You Save ₹1,996 — That's 74% OFF</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA Box -->
+                        <div class="col-md-4">
+                            <div class="offer-cta-box">
+                                <div class="offer-countdown-bar">
+                                    This price expires in &nbsp;<span class="offer-countdown-time" id="offer-timer">--:--:--</span>
+                                </div>
+
+                                <img src="images/q1.jpeg" alt="Complete Grooming Pack" class="offer-product-img"
+                                     onerror="this.src='https://via.placeholder.com/220x220?text=Grooming+Pack'">
+
+                                <div class="offer-cta-price-row">
+                                    <span class="offer-cta-price">₹699</span>
+                                    <span class="offer-cta-was">₹2,695</span>
+                                    <span class="offer-cta-badge">74% OFF</span>
+                                </div>
+                                <div class="text-muted small mb-3" style="font-size:0.75rem;">Free shipping · COD available</div>
+
+                                <button class="offer-cta-btn" onclick="addBundleToCart()">
+                                    Get The Complete Pack
+                                </button>
+                                <button class="offer-cta-btn-secondary" onclick="document.getElementById('shop-section').scrollIntoView({behavior:'smooth'})">
+                                    Browse Individual Products
+                                </button>
+
+                                <div class="offer-guarantee-box">
+                                    <div class="offer-guarantee-title">30-Day Money-Back Guarantee</div>
+                                    <div class="offer-guarantee-text">If you or your pet aren't 100% happy, we'll refund every rupee. No questions. No hassle. Zero risk.</div>
+                                </div>
+
+                                <div class="offer-social-proof">
+                                    <span style="color:#f39c12;">★★★★★</span> &nbsp;847 pet parents already love this pack
+                                </div>
+                                <div class="offer-scarcity-text">
+                                    <span style="font-size:0.9rem;">⚠</span> Only 23 packs left at this price
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== HOW IT WORKS ===== -->
+            <div class="hiw-section">
+                <div class="container">
+                    <div class="text-center mb-5">
+                        <span class="section-eyebrow">Simple & Transparent</span>
+                        <h2 class="fw-bold mt-2">How Your Order Works</h2>
+                        <p class="text-muted small mx-auto" style="max-width:480px;">No confusing checkout. No prepayment risk. Just pick, confirm on WhatsApp, and receive at your door.</p>
+                    </div>
+                    <div class="hiw-steps">
+                        <div class="hiw-step">
+                            <div class="hiw-num">1</div>
+                            <div class="hiw-icon">🛒</div>
+                            <div class="hiw-step-title">Browse & Choose</div>
+                            <div class="hiw-step-desc">Pick any product. No account needed. Add to bag or tap "Buy Now".</div>
+                        </div>
+                        <div class="hiw-connector"><i class="bi bi-arrow-right"></i></div>
+                        <div class="hiw-step">
+                            <div class="hiw-num">2</div>
+                            <div class="hiw-icon">📝</div>
+                            <div class="hiw-step-title">Fill Your Details</div>
+                            <div class="hiw-step-desc">Name, WhatsApp number, delivery address. Takes under 60 seconds.</div>
+                        </div>
+                        <div class="hiw-connector"><i class="bi bi-arrow-right"></i></div>
+                        <div class="hiw-step">
+                            <div class="hiw-num">3</div>
+                            <div class="hiw-icon">💬</div>
+                            <div class="hiw-step-title">Confirm on WhatsApp</div>
+                            <div class="hiw-step-desc">Your order summary opens in WhatsApp. We call you to verify and confirm within 2 hours.</div>
+                        </div>
+                        <div class="hiw-connector"><i class="bi bi-arrow-right"></i></div>
+                        <div class="hiw-step">
+                            <div class="hiw-num">4</div>
+                            <div class="hiw-icon">📦</div>
+                            <div class="hiw-step-title">Delivered to Your Door</div>
+                            <div class="hiw-step-desc">Packed from our warehouse. Arrives in 5–7 days. Pay cash on delivery — only when it arrives.</div>
+                        </div>
+                    </div>
+                    <div class="hiw-note">
+                        <i class="bi bi-shield-check text-success me-2"></i>
+                        <strong>Zero prepayment risk.</strong> You only pay when the package is in your hands. We verify every order personally via WhatsApp before dispatch.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== DIRECT FROM SOURCE ===== -->
+            <div class="dfs-section">
+                <div class="container">
+                    <div class="row align-items-center g-5">
+                        <!-- Left: The narrative -->
+                        <div class="col-md-6">
+                            <span class="section-eyebrow">Why We're So Affordable</span>
+                            <h2 class="fw-bold mt-2 mb-3">We Cut Out Every Middleman.<br><span style="color:var(--primary)">You Get Factory Price.</span></h2>
+                            <p class="text-muted mb-4" style="line-height:1.8;">Most pet products travel through <strong>4–5 hands</strong> before reaching you — importer, distributor, wholesaler, retailer. Each one adds their margin. By the time it hits a store shelf, you're paying 3× the real cost.</p>
+                            <p class="text-muted mb-4" style="line-height:1.8;">We source directly from the manufacturer, warehouse it ourselves, and ship straight to your door. <strong>One step. One margin. Honest price.</strong></p>
+                            <div class="dfs-proof-row">
+                                <div class="dfs-proof-item">
+                                    <div class="dfs-proof-num">₹1,500+</div>
+                                    <div class="dfs-proof-label">Retail store price</div>
+                                </div>
+                                <div class="dfs-proof-arrow">vs</div>
+                                <div class="dfs-proof-item dfs-proof-highlight">
+                                    <div class="dfs-proof-num">₹499</div>
+                                    <div class="dfs-proof-label">ZenithTail direct</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Supply chain visual -->
+                        <div class="col-md-6">
+                            <div class="dfs-chain-wrap">
+                                <!-- Traditional -->
+                                <div class="dfs-chain-label dfs-chain-bad">Traditional Retail — You Pay 3× More</div>
+                                <div class="dfs-chain dfs-chain-retail">
+                                    <div class="dfs-node dfs-node-neutral">🏭<span>Factory</span></div>
+                                    <div class="dfs-chain-line"></div>
+                                    <div class="dfs-node dfs-node-bad">📦<span>Importer</span></div>
+                                    <div class="dfs-chain-line"></div>
+                                    <div class="dfs-node dfs-node-bad">🏢<span>Distributor</span></div>
+                                    <div class="dfs-chain-line"></div>
+                                    <div class="dfs-node dfs-node-bad">🏬<span>Retailer</span></div>
+                                    <div class="dfs-chain-line"></div>
+                                    <div class="dfs-node dfs-node-you">😔<span>You</span></div>
+                                </div>
+                                <div class="dfs-chain-markup-row">
+                                    <span></span>
+                                    <span class="dfs-markup-tag">+30%</span>
+                                    <span class="dfs-markup-tag">+40%</span>
+                                    <span class="dfs-markup-tag">+60%</span>
+                                    <span></span>
+                                </div>
+
+                                <!-- ZenithTail -->
+                                <div class="dfs-chain-label dfs-chain-good mt-4">ZenithTail Direct — Honest Price</div>
+                                <div class="dfs-chain dfs-chain-direct">
+                                    <div class="dfs-node dfs-node-neutral">🏭<span>Factory</span></div>
+                                    <div class="dfs-chain-line dfs-line-gold"></div>
+                                    <div class="dfs-node dfs-node-zenith">🐾<span>ZenithTail</span></div>
+                                    <div class="dfs-chain-line dfs-line-gold"></div>
+                                    <div class="dfs-node dfs-node-you-happy">😊<span>You</span></div>
+                                </div>
+                                <div class="dfs-chain-markup-row">
+                                    <span></span>
+                                    <span class="dfs-markup-tag dfs-markup-small">small margin</span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Testimonials -->
